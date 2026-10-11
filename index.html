@@ -1,0 +1,4225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>Task List</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --panel-2: #1f2937;
+            --line: #334155;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --accent: #22c55e;
+            --accent-soft: rgba(34, 197, 94, 0.14);
+            --danger: #ef4444;
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(34, 197, 94, 0.15), transparent 28%),
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 24%),
+                linear-gradient(180deg, #08111f 0%, #0f172a 100%);
+        }
+
+        .shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            padding: 28px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(17, 24, 39, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: var(--shadow);
+            border-radius: 24px;
+            padding: 28px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        }
+
+        .headline h1 {
+            margin: 4px 0 0;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            line-height: 1;
+            letter-spacing: -0.04em;
+        }
+
+        .headline p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .credit-pill {
+            padding: 12px 16px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.08));
+            border: 1px solid rgba(34, 197, 94, 0.28);
+            color: #d1fae5;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        form input[type="date"],
+        form select {
+            min-width: 0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        form input[type="date"]:focus,
+        form select:focus {
+            border-color: rgba(34, 197, 94, 0.8);
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .task-toolbar {
+            display: grid;
+            gap: 12px;
+            margin: -8px 0 18px;
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .task-toolbar-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .task-toolbar label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            color: #cbd5e1;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .task-toolbar select,
+        .task-toolbar input[type="text"],
+        .task-toolbar input[type="date"] {
+            flex: none;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .task-toolbar select:focus,
+        .task-toolbar input[type="date"]:focus {
+            border-color: rgba(34, 197, 94, 0.8);
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .task-toolbar-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .task-filter-summary {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .task-clear-btn {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .task-clear-btn:hover {
+            background: rgba(148, 163, 184, 0.14);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: rgba(34, 197, 94, 0.8);
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .add-btn {
+            border: none;
+            border-radius: 14px;
+            padding: 14px 18px;
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+            color: #04130a;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.18s ease, filter 0.18s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.04);
+        }
+
+        .add-btn:active {
+            transform: translateY(0);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li.task-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            justify-content: space-between;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-left: 4px solid var(--line);
+            transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+        }
+
+        li.task-row:hover {
+            transform: translateY(-1px);
+        }
+
+        .task-body {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-content {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #64748b;
+            flex: 0 0 auto;
+        }
+
+        .task-text {
+            font-size: 1.05rem;
+            word-break: break-word;
+        }
+
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .task-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(15, 23, 42, 0.55);
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .task-chip.category {
+            border-color: rgba(34, 197, 94, 0.28);
+            background: rgba(34, 197, 94, 0.08);
+            color: #bbf7d0;
+        }
+
+        .task-row.completed {
+            border-left-color: var(--accent);
+            background: rgba(6, 78, 59, 0.28);
+        }
+
+        .task-row.completed .status-dot {
+            background: var(--accent);
+        }
+
+        .task-row.completed .task-text {
+            color: #bbf7d0;
+        }
+
+        .task-row.completed .task-text::after {
+            content: "  Locked";
+            font-size: 0.82rem;
+            color: rgba(187, 247, 208, 0.7);
+            margin-left: 8px;
+        }
+
+        .task-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .complete-btn {
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            background: var(--accent-soft);
+            color: #86efac;
+            border-radius: 999px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .complete-btn:hover {
+            background: rgba(34, 197, 94, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .complete-btn:disabled {
+            cursor: default;
+            opacity: 0.65;
+            transform: none;
+        }
+
+        .delete-btn {
+            border: 1px solid rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border-radius: 999px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(148, 163, 184, 0.12);
+            color: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .icon-btn.inline {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 auto;
+        }
+
+        .edit-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(34, 197, 94, 0.6);
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+        }
+
+        .checkmark {
+            font-size: 1.25rem;
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        .note {
+            margin-top: auto;
+            width: 100%;
+            max-width: 640px;
+            text-align: center;
+            font-size: 0.92rem;
+            color: #cbd5e1;
+            padding: 12px 16px;
+            border-radius: 14px;
+            background: rgba(148, 163, 184, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .empty-filter-state {
+            margin: 0;
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px dashed rgba(148, 163, 184, 0.22);
+            color: var(--muted);
+            text-align: center;
+            background: rgba(15, 23, 42, 0.55);
+        }
+
+        .profile-btn {
+            position: fixed;
+            top: 22px;
+            right: 22px;
+            z-index: 60;
+            width: 46px;
+            height: 46px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            background: rgba(17, 24, 39, 0.92);
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            transition: transform 0.18s ease, background 0.18s ease, filter 0.18s ease;
+        }
+
+        .profile-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(31, 41, 55, 0.98);
+            color: #fff;
+        }
+
+        .profile-btn.has-name {
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+            border-color: transparent;
+            color: #04130a;
+            font-weight: 800;
+            font-size: 1.15rem;
+        }
+
+        .profile-btn.has-name:hover {
+            filter: brightness(1.06);
+            color: #04130a;
+        }
+
+        .profile-card {
+            position: fixed;
+            top: 80px;
+            right: 22px;
+            z-index: 60;
+            width: min(340px, calc(100vw - 32px));
+            padding: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 22px;
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(-8px) scale(0.97);
+            transform-origin: top right;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        .profile-card.open {
+            opacity: 1;
+            transform: none;
+            pointer-events: auto;
+        }
+
+        .profile-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .profile-kicker {
+            margin: 0 0 2px;
+            color: #86efac;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .profile-card-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .profile-greet {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .card-close {
+            flex: 0 0 auto;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+
+        .card-close:hover {
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .profile-field {
+            margin-bottom: 14px;
+        }
+
+        .profile-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #bae6fd;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        #profileNameInput {
+            width: 100%;
+        }
+
+        #profileNameInput[readonly] {
+            opacity: 0.78;
+            cursor: default;
+        }
+
+        #profileNameInput[readonly]:focus {
+            border-color: var(--line);
+            box-shadow: none;
+        }
+
+        .profile-save {
+            width: 100%;
+        }
+
+        .profile-saved {
+            margin: 12px 0 0;
+            text-align: center;
+            color: #86efac;
+            font-size: 0.88rem;
+        }
+
+        .profile-divider {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 18px 0 14px;
+        }
+
+        .profile-reset {
+            width: 100%;
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .profile-reset:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .profile-reset-hint {
+            margin: 8px 0 0;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.72rem;
+            line-height: 1.4;
+        }
+
+        /* Sync status banner */
+        .sync-banner {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            max-width: min(520px, calc(100vw - 32px));
+            padding: 9px 15px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            color: #cbd5e1;
+            font-size: 0.8rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .sync-banner[hidden] {
+            display: none;
+            opacity: 0;
+        }
+
+        .sync-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: #64748b;
+            flex: 0 0 auto;
+        }
+
+        .sync-banner[data-tone="ok"] .sync-dot {
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+        }
+
+        .sync-banner[data-tone="busy"] .sync-dot {
+            background: #fbbf24;
+            animation: sync-pulse 1.1s ease-in-out infinite;
+        }
+
+        .sync-banner[data-tone="error"] .sync-dot {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes sync-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .sync-retry {
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .sync-retry:hover {
+            background: rgba(148, 163, 184, 0.2);
+        }
+
+        /* Transient notice (e.g. future-dated task blocked) */
+        .task-notice {
+            position: fixed;
+            top: 64px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 80;
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(251, 191, 36, 0.45);
+            color: #fde68a;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .task-notice[hidden] {
+            display: none;
+        }
+
+        .task-notice.show {
+            animation: notice-pop 0.25s ease;
+        }
+
+        @keyframes notice-pop {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-6px);
+            }
+        }
+
+        /* Make the native date-picker calendar icon white on dark inputs */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(1.7);
+            cursor: pointer;
+        }
+
+        /* Auth form inside the profile card */
+        .password-wrap {
+            position: relative;
+        }
+
+        .pw-toggle {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .pw-toggle:hover {
+            color: var(--text);
+        }
+
+        #authSection input,
+        #forgotForm input {
+            width: 100%;
+        }
+
+        #authSection form[hidden],
+        #forgotForm[hidden],
+        #signedInView[hidden],
+        #authSection[hidden] {
+            display: none;
+        }
+
+        .profile-error {
+            margin: 12px 0 0;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            font-size: 0.84rem;
+            text-align: center;
+        }
+
+        .profile-success {
+            margin: 12px 0 0;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            color: #86efac;
+            font-size: 0.84rem;
+            text-align: center;
+        }
+
+        .auth-switch {
+            margin: 16px 0 0;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .auth-switch-btn {
+            border: none;
+            background: transparent;
+            color: #86efac;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+
+        .auth-switch-btn:hover {
+            text-decoration: underline;
+        }
+
+        .profile-account-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .profile-avatar-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+            color: #04130a;
+            font-weight: 800;
+            flex: 0 0 auto;
+        }
+
+        .profile-email {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #cbd5e1;
+            font-size: 0.88rem;
+        }
+
+        .logout-btn {
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .profile-save[hidden],
+        .profile-saved[hidden] {
+            display: none;
+        }
+
+        .spinner {
+            animation: spin 0.9s linear infinite;
+            vertical-align: -3px;
+            margin-right: 7px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(2, 6, 23, 0.72);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            width: min(430px, 100%);
+            padding: 26px;
+            border-radius: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+            transform: translateY(12px) scale(0.97);
+            transition: transform 0.22s ease;
+        }
+
+        .modal-overlay.open .modal-box {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-box h2 {
+            margin: 0 0 6px;
+            font-size: 1.3rem;
+        }
+
+        .modal-text {
+            margin: 0 0 22px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-ghost {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 10px 18px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        .btn-danger {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 18px;
+            background: linear-gradient(180deg, #ef4444, #dc2626);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 800;
+            transition: filter 0.18s ease, transform 0.18s ease;
+        }
+
+        .btn-danger:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+
+        .modal-actions.center {
+            justify-content: center;
+        }
+
+        .rewards-panel {
+            position: fixed;
+            top: 22px;
+            left: 22px;
+            z-index: 50;
+            width: min(320px, calc(100vw - 44px));
+            max-height: calc(100vh - 22px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .rewards-panel .rewards-main {
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 3px;
+            padding-bottom: 8px;
+        }
+
+        .rewards-panel.collapsed {
+            transform: none;
+        }
+
+        .cal-panel {
+            position: fixed;
+            bottom: 22px;
+            right: 22px;
+            z-index: 40;
+            width: min(280px, calc(100vw - 44px));
+            max-height: calc(100vh - 44px);
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        .cal-panel .cal-card {
+            margin-bottom: 14px;
+        }
+
+        .cal-panel .cal-legend {
+            margin-top: 0;
+        }
+
+        .cal-panel.collapsed {
+            transform: none;
+        }
+
+        .cal-panel.collapsed .cal-card {
+            display: none;
+        }
+
+        .rewards-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .rewards-kicker {
+            margin: 0 0 2px;
+            color: #86efac;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .rewards-head h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .rewards-head-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rewards-count {
+            color: var(--muted);
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+
+        .rewards-main {
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 4px;
+        }
+
+        .rewards-panel.collapsed .rewards-main {
+            display: none;
+        }
+
+        .streak-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.14), rgba(251, 191, 36, 0.05));
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .streak-emoji {
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        .streak-value {
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.05rem;
+        }
+
+        .streak-meta {
+            margin: 3px 0 0;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .streak-track {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(251, 191, 36, 0.15);
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .streak-track-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            transition: width 0.4s ease;
+        }
+
+        .streak-next {
+            margin: 0 0 16px;
+            font-size: 0.8rem;
+            color: #fde68a;
+        }
+
+        .rewards-subhead {
+            margin: 0 0 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .rewards-sub-count {
+            color: #86efac;
+        }
+
+        .badges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px;
+        }
+
+        .badge-card {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 11px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            opacity: 0.5;
+            filter: grayscale(0.9);
+            transition: opacity 0.25s ease, filter 0.25s ease, border-color 0.25s ease, transform 0.18s ease;
+        }
+
+        .badge-card.earned {
+            opacity: 1;
+            filter: none;
+            border-color: rgba(34, 197, 94, 0.4);
+            background: rgba(6, 78, 59, 0.3);
+            box-shadow: 0 0 22px rgba(34, 197, 94, 0.12);
+        }
+
+        .badge-card.earned:hover {
+            transform: translateY(-1px);
+        }
+
+        .badge-emoji {
+            font-size: 1.45rem;
+            line-height: 1;
+            flex: 0 0 auto;
+        }
+
+        .badge-info {
+            min-width: 0;
+        }
+
+        .badge-name {
+            margin: 0;
+            font-weight: 800;
+            font-size: 0.88rem;
+        }
+
+        .badge-meta {
+            margin: 2px 0 0;
+            font-size: 0.7rem;
+            color: var(--muted);
+            line-height: 1.3;
+        }
+
+        .badge-card.earned .badge-meta {
+            color: #86efac;
+        }
+
+        .badge-celebration {
+            text-align: center;
+            padding: 6px 0 2px;
+        }
+
+        .badge-kicker {
+            margin: 0 0 12px;
+            color: #fbbf24;
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .badge-big-emoji {
+            display: block;
+            font-size: 3.4rem;
+            line-height: 1;
+            animation: badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes badge-pop {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.18);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .badge-celebration h2 {
+            margin: 12px 0 8px;
+            font-size: 1.45rem;
+        }
+
+        /* Activity calendar */
+        .cal-card {
+            padding: 12px 12px 10px;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            margin-bottom: 14px;
+        }
+
+        .cal-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .cal-nav {
+            flex: 0 0 auto;
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: transparent;
+            color: var(--text);
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .cal-nav:hover:not(:disabled) {
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .cal-nav:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .cal-title {
+            flex: 1;
+            text-align: center;
+            min-width: 0;
+        }
+
+        .cal-month {
+            margin: 0;
+            font-size: 0.86rem;
+            font-weight: 800;
+        }
+
+        .cal-stats {
+            margin: 2px 0 0;
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+
+        .cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .cal-weekdays span {
+            text-align: center;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .cal-cell {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            border: 1px solid transparent;
+        }
+
+        .cal-cell.done {
+            background: rgba(34, 197, 94, 0.22);
+            color: #bbf7d0;
+            border-color: rgba(34, 197, 94, 0.45);
+        }
+
+        .cal-dots {
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            max-width: calc(100% - 6px);
+        }
+
+        .cal-dot {
+            width: 4px;
+            height: 4px;
+            flex: 0 0 4px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .cal-dot-more {
+            color: #bbf7d0;
+            font-size: 0.48rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .cal-cell.frozen {
+            background: rgba(56, 189, 248, 0.2);
+            color: #bae6fd;
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+
+        .cal-cell.frozen::after {
+            content: '❄';
+            position: absolute;
+            bottom: 1px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.5rem;
+            line-height: 1;
+        }
+
+        .cal-cell.today {
+            border-color: #22c55e;
+            color: #fff;
+            font-weight: 800;
+            box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.55);
+        }
+
+        .cal-cell.future {
+            opacity: 0.28;
+        }
+
+        .cal-legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 9px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.62rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .legend-item .swatch {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+            background: rgba(34, 197, 94, 0.55);
+            border: 1px solid rgba(34, 197, 94, 0.8);
+        }
+
+        .legend-item .swatch.frozen {
+            background: rgba(56, 189, 248, 0.5);
+            border-color: rgba(56, 189, 248, 0.9);
+        }
+
+        .legend-item .swatch.today {
+            background: transparent;
+            border-color: #22c55e;
+        }
+
+        .streak-card.frozen {
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0.05));
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        /* Sidebar calendar (right) */
+        .cal-panel {
+            position: fixed;
+            top: 110px;
+            right: 22px;
+            z-index: 40;
+            width: min(320px, calc(100vw - 44px));
+            max-height: calc(100vh - 44px);
+            overflow-y: auto;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .cal-panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .cal-panel-kicker {
+            margin: 0 0 2px;
+            color: #86efac;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .cal-panel-head h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .cal-panel-toggle {
+            flex: 0 0 auto;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: transparent;
+            color: var(--text);
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .cal-panel-toggle:hover {
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .cal-panel .cal-card {
+            margin-bottom: 14px;
+        }
+
+        .cal-panel .cal-legend {
+            margin-top: 0;
+        }
+
+        /* Performance card */
+        .perf-card {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(17, 24, 39, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: var(--shadow);
+            border-radius: 24px;
+            padding: 26px 28px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .view-switch {
+            display: inline-flex;
+            padding: 4px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 13px;
+            background: rgba(15, 23, 42, 0.72);
+        }
+
+        .view-switch button {
+            border: 0;
+            border-radius: 9px;
+            padding: 8px 11px;
+            background: transparent;
+            color: var(--muted);
+            font: inherit;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .view-switch button.active {
+            background: rgba(34, 197, 94, 0.18);
+            color: #bbf7d0;
+        }
+
+        .view-switch button:focus-visible {
+            outline: 2px solid #86efac;
+            outline-offset: 2px;
+        }
+
+        @media (min-width: 1081px) {
+            .shell {
+                max-width: 1600px;
+                padding-top: 72px;
+                transform: translateX(-41.5px);
+            }
+
+            .app-container,
+            .perf-card {
+                width: calc(100vw - 707px);
+                max-width: 1100px;
+            }
+
+            .app-container .perf-card {
+                width: 100%;
+                max-width: none;
+                padding: 0;
+                background: transparent;
+                border: 0;
+                box-shadow: none;
+            }
+
+            .rewards-panel,
+            .cal-panel {
+                top: 72px;
+                width: min(280px, calc(100vw - 44px));
+            }
+
+            .cal-panel {
+                right: 105px;
+            }
+
+            .profile-btn {
+                top: 72px;
+                right: 49px;
+            }
+
+            .profile-card {
+                top: 130px;
+                right: 49px;
+            }
+        }
+
+        .perf-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        }
+
+        .perf-kicker {
+            margin: 0 0 2px;
+            color: #86efac;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .perf-head h2 {
+            margin: 0;
+            font-size: 1.45rem;
+            letter-spacing: -0.02em;
+        }
+
+        .perf-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--line);
+        }
+
+        .perf-tab {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 7px 15px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color 0.18s ease, background 0.18s ease;
+        }
+
+        .perf-tab:hover:not(.active) {
+            color: var(--text);
+        }
+
+        .perf-tab.active {
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+            color: #04130a;
+        }
+
+        .perf-summary {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .chart {
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .chart-col {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 7px;
+        }
+
+        .chart-track {
+            height: 150px;
+            display: flex;
+            align-items: flex-end;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+        }
+
+        .chart-bar {
+            width: 100%;
+            max-width: 26px;
+            margin: 0 auto;
+            border-radius: 6px 6px 2px 2px;
+            background: linear-gradient(180deg, #34d399, #059669);
+            transition: height 0.35s ease;
+        }
+
+        .chart-col.current .chart-bar {
+            background: linear-gradient(180deg, #fbbf24, #d97706);
+            box-shadow: 0 0 16px rgba(251, 191, 36, 0.35);
+        }
+
+        .chart-labels {
+            text-align: center;
+            font-size: 0.6rem;
+            color: var(--muted);
+            line-height: 1.25;
+            min-height: 2em;
+        }
+
+        .chart-col.current .chart-labels {
+            color: #fcd34d;
+        }
+
+        .chart-empty {
+            display: grid;
+            place-items: center;
+            width: 100%;
+            min-height: 170px;
+            padding: 20px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.85rem;
+            border: 1px dashed rgba(148, 163, 184, 0.25);
+            border-radius: 16px;
+        }
+
+        .perf-hint {
+            margin: 14px 0 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        @media (max-width: 1080px) {
+            .profile-btn {
+                top: 22px;
+                right: 22px;
+            }
+
+            .profile-card {
+                top: 80px;
+                right: 22px;
+            }
+
+            .rewards-panel {
+                top: 16px;
+                left: 16px;
+                max-height: calc(100vh - 32px);
+            }
+
+            .cal-panel {
+                top: auto;
+                bottom: 16px;
+                right: 16px;
+                max-height: calc(50vh - 32px);
+                width: min(320px, calc(100vw - 32px));
+            }
+        }
+
+
+        /* ============================================================
+           Responsive layout — tablets and phones
+           ============================================================ */
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+
+        button,
+        input,
+        select {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Show the right wording for touch vs mouse users */
+        .touch-copy {
+            display: none;
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .hover-copy {
+                display: none;
+            }
+
+            .touch-copy {
+                display: inline;
+            }
+        }
+
+        /* Tablets and small laptops: two-column filter row */
+        @media (min-width: 641px) and (max-width: 1080px) {
+            .task-toolbar-row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        /* Phones */
+        @media (max-width: 640px) {
+            body {
+                background-attachment: scroll;
+            }
+
+            /* 16px inputs prevent iOS Safari from zooming on focus */
+            input[type="text"],
+            input[type="date"],
+            input[type="email"],
+            input[type="password"],
+            select {
+                font-size: 16px;
+                width: 100%;
+                min-height: 46px;
+                padding: 12px 14px;
+            }
+
+            .shell {
+                padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+            }
+
+            .app-container {
+                border-radius: 20px;
+                padding: 18px 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .credit-pill {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .view-switch button {
+                padding: 10px 12px;
+            }
+
+            /* Add-task form stacks with a full-width button */
+            form {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .add-btn {
+                width: 100%;
+                min-height: 48px;
+            }
+
+            .task-toolbar {
+                padding: 12px;
+            }
+
+            .task-toolbar-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            /* Task rows stack; actions become easy tap targets */
+            li.task-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 12px;
+                padding: 14px;
+            }
+
+            .task-body {
+                align-items: flex-start;
+                width: 100%;
+            }
+
+            .task-actions {
+                width: 100%;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+
+            .complete-btn,
+            .delete-btn {
+                flex: 1;
+                min-height: 42px;
+                text-align: center;
+            }
+
+            .task-row.completed .task-actions {
+                justify-content: flex-start;
+            }
+
+            .icon-btn.inline {
+                width: 34px;
+                height: 34px;
+            }
+
+            /* Panels flow below the task list as normal cards */
+            .rewards-panel,
+            .cal-panel {
+                position: relative;
+                top: auto;
+                right: auto;
+                bottom: auto;
+                left: auto;
+                width: 100%;
+                max-height: none;
+                margin: 14px 0 0;
+                border-radius: 20px;
+            }
+
+            .rewards-main {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Profile: full-width button and near full-width sheet */
+            .profile-btn {
+                top: 14px;
+                right: 14px;
+            }
+
+            .profile-card {
+                top: 70px;
+                right: 14px;
+                left: 14px;
+                width: auto;
+                max-height: calc(100vh - 90px);
+                max-height: calc(100dvh - 90px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Banners stay clear of the profile button */
+            .sync-banner {
+                top: 12px;
+                max-width: calc(100vw - 104px);
+                padding: 8px 12px;
+                font-size: 0.72rem;
+            }
+
+            .task-notice {
+                top: 58px;
+                max-width: calc(100vw - 32px);
+                font-size: 0.78rem;
+                text-align: center;
+            }
+
+            /* Modals: scrollable, stacked, tappable */
+            .modal-box {
+                width: 100%;
+                max-height: calc(100vh - 40px);
+                max-height: calc(100dvh - 40px);
+                overflow-y: auto;
+                padding: 20px 18px;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+
+            .modal-actions .btn-ghost,
+            .modal-actions .btn-danger {
+                width: 100%;
+                min-height: 46px;
+            }
+
+            .profile-save,
+            .logout-btn,
+            .profile-reset {
+                min-height: 46px;
+            }
+
+            .card-close,
+            .cal-panel-toggle {
+                width: 36px;
+                height: 36px;
+            }
+
+            .cal-nav {
+                width: 34px;
+                height: 34px;
+            }
+
+            /* Performance card */
+            .perf-card {
+                padding: 20px 16px;
+            }
+
+            .perf-head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .perf-tabs {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .perf-tab {
+                flex: 1 1 auto;
+                padding: 9px 12px;
+            }
+
+            .perf-hint {
+                font-size: 0.68rem;
+            }
+
+            .chart-track {
+                height: 110px;
+            }
+
+            .chart-labels {
+                font-size: 0.55rem;
+            }
+
+            /* Rewards + calendar cards */
+            .badges-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+
+        /* Very narrow phones */
+        @media (max-width: 360px) {
+            .badges-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .view-switch button {
+                padding: 10px 8px;
+                font-size: 0.72rem;
+            }
+
+            .credit-pill {
+                font-size: 0.82rem;
+            }
+        }
+    </style>
+</head>
+    <body>
+    <button class="profile-btn" id="profileBtn" type="button" aria-label="Open profile" aria-haspopup="dialog" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+        </svg>
+    </button>
+
+    <section class="profile-card" id="profileCard" aria-hidden="true" aria-labelledby="profileCardTitle">
+        <div class="profile-card-header">
+            <div>
+                <p class="profile-kicker">Account</p>
+                <h2 id="profileCardTitle">Profile</h2>
+                <p class="profile-greet" id="profileGreet">Sign in to sync your tasks everywhere.</p>
+            </div>
+            <button class="card-close" id="closeProfileBtn" type="button" aria-label="Close profile">&times;</button>
+        </div>
+
+        <!-- Signed-out: login / signup -->
+        <div id="authSection">
+            <form id="authForm" data-mode="login" autocomplete="on" novalidate>
+                <div class="profile-field" id="authNameField">
+                    <label for="authName">Display name</label>
+                    <input type="text" id="authName" placeholder="What should we call you?" autocomplete="nickname" maxlength="40">
+                </div>
+                <div class="profile-field">
+                    <label for="authEmail">Email</label>
+                    <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" required>
+                </div>
+                <div class="profile-field">
+                    <label for="authPassword">Password</label>
+                    <div class="password-wrap">
+                        <input type="password" id="authPassword" placeholder="Minimum 6 characters" minlength="6" autocomplete="current-password" required>
+                        <button type="button" class="pw-toggle" id="authPasswordToggle" aria-label="Show password" aria-pressed="false">&#128065;</button>
+                    </div>
+                </div>
+                <button class="add-btn profile-save" id="authPrimaryBtn" type="submit">Log In</button>
+                <button type="button" class="btn-ghost profile-save" id="forgotBtn">Forgot password?</button>
+            </form>
+            <div id="forgotForm" hidden>
+                <div class="profile-field">
+                    <label for="forgotEmail">Send reset link to</label>
+                    <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email">
+                </div>
+                <button type="button" class="add-btn profile-save" id="sendResetBtn">Send reset link</button>
+                <button type="button" class="btn-ghost profile-save" id="cancelForgotBtn">Back to log in</button>
+            </div>
+            <p class="profile-error" id="authError" role="alert" hidden></p>
+            <p class="profile-success" id="authSuccess" hidden></p>
+            <p class="auth-switch">
+                <span id="authSwitchHint">New here?</span>
+                <button type="button" class="auth-switch-btn" id="authSwitchModeBtn">Need an account? Sign up</button>
+            </p>
+        </div>
+
+        <!-- Signed-in: account summary -->
+        <div id="signedInView" hidden>
+            <div class="profile-account-row">
+                <span class="profile-avatar-badge" id="accountAvatar">?</span>
+                <span class="profile-email" id="accountEmail"></span>
+            </div>
+            <div class="profile-field">
+                <label for="profileNameInput">Your name</label>
+                <input type="text" id="profileNameInput" placeholder="Enter your name" autocomplete="name" maxlength="40">
+            </div>
+            <button class="add-btn profile-save" id="saveNameBtn" type="button">Save</button>
+            <button class="btn-ghost profile-save" id="editNameBtn" type="button" hidden>Edit</button>
+            <p class="profile-saved" id="profileSaved" hidden>&#10003; Saved &amp; syncing</p>
+            <hr class="profile-divider">
+            <button class="btn-ghost profile-save logout-btn" id="logoutBtn" type="button">Log Out</button>
+            <hr class="profile-divider">
+            <button class="btn-ghost profile-reset" id="resetBtn" type="button">Remove App Data</button>
+            <p class="profile-reset-hint">Clears all tasks, credits, badges and rewards everywhere.</p>
+        </div>
+    </section>
+
+    <div class="sync-banner" id="syncBanner" data-tone="idle" hidden>
+        <span class="sync-dot" aria-hidden="true"></span>
+        <span id="syncText" role="status">Connecting…</span>
+        <button class="sync-retry" id="syncRetry" type="button" hidden>Retry</button>
+    </div>
+
+    <div class="task-notice" id="taskNotice" role="status" hidden></div>
+
+    <main class="shell">
+        <section class="app-container">
+            <div class="header">
+                <div class="headline">
+                    <p>Daily workflow</p>
+                    <h1>Task List</h1>
+                </div>
+                <div class="header-actions">
+                    <div class="view-switch" role="tablist" aria-label="Main view">
+                        <button class="active" id="tasksViewBtn" type="button" role="tab" aria-selected="true">Tasks</button>
+                        <button id="performanceViewBtn" type="button" role="tab" aria-selected="false">Performance</button>
+                    </div>
+                    <div class="credit-pill" id="scoreDisplay">Total Credits: 0</div>
+                </div>
+            </div>
+
+            <div id="tasksView">
+                <form id="taskForm" autocomplete="off">
+                    <input type="text" id="taskInput" placeholder="Enter a task and press Enter" aria-label="Task">
+                    <input type="date" id="taskDateInput" aria-label="Task date">
+                    <select id="taskCategoryInput" aria-label="Task category">
+                        <option value="auto">Auto category</option>
+                        <option value="Fitness">Fitness</option>
+                        <option value="Work">Work</option>
+                        <option value="Education">Education</option>
+                        <option value="Health">Health</option>
+                        <option value="Home">Home</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Errands">Errands</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Social">Social</option>
+                        <option value="Leisure">Leisure</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <button class="add-btn" type="submit">Add Task</button>
+                </form>
+
+                <div class="task-toolbar" aria-label="Task filters">
+                    <div class="task-toolbar-row">
+                        <label for="filterDay">
+                            Day
+                            <select id="filterDay">
+                                <option value="all">All days</option>
+                                <option value="Sunday">Sunday</option>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                            </select>
+                        </label>
+                        <label for="filterDate">
+                            Date
+                            <input type="date" id="filterDate" aria-label="Filter by date">
+                        </label>
+                        <label for="filterCategory">
+                            Category
+                            <select id="filterCategory">
+                                <option value="all">All categories</option>
+                                <option value="Fitness">Fitness</option>
+                                <option value="Work">Work</option>
+                                <option value="Education">Education</option>
+                                <option value="Health">Health</option>
+                                <option value="Home">Home</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Errands">Errands</option>
+                                <option value="Personal">Personal</option>
+                                <option value="Social">Social</option>
+                                <option value="Leisure">Leisure</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </label>
+                        <label for="filterText">
+                            Quick search
+                            <input type="text" id="filterText" placeholder="Search task text">
+                        </label>
+                    </div>
+                    <div class="task-toolbar-actions">
+                        <p class="task-filter-summary" id="taskFilterSummary">Showing all tasks.</p>
+                        <button class="task-clear-btn" id="clearFiltersBtn" type="button">Clear filters</button>
+                    </div>
+                </div>
+
+                <ul id="taskList" aria-live="polite"></ul>
+            </div>
+
+            <section class="perf-card" id="performanceView" aria-label="Performance analysis" hidden>
+            <div class="perf-head">
+                <div>
+                    <p class="perf-kicker">Analytics</p>
+                    <h2>Performance</h2>
+                </div>
+                <div class="perf-tabs" role="tablist" aria-label="Performance period">
+                    <button class="perf-tab active" type="button" role="tab" aria-selected="true" data-range="day">Day</button>
+                    <button class="perf-tab" type="button" role="tab" aria-selected="false" data-range="week">Week</button>
+                    <button class="perf-tab" type="button" role="tab" aria-selected="false" data-range="month">Month</button>
+                    <button class="perf-tab" type="button" role="tab" aria-selected="false" data-range="year">Year</button>
+                </div>
+            </div>
+            <p class="perf-summary" id="perfSummary"></p>
+            <div class="chart" id="perfChart" role="img"></div>
+            <p class="perf-hint">Bars show tasks completed per day/week/month/year — <span class="hover-copy">hover a bar</span><span class="touch-copy">touch &amp; hold a bar</span> for the exact date and count.</p>
+            </section>
+        </section>
+
+        <p class="note">
+            Note: press <strong>Enter</strong> to add a task, or use add task button. Pick a date and category to organize it, then filter by day, date, category, or search text. Completed tasks stay locked — they can't be edited or deleted, so their credits are safe.
+        </p>
+    </main>
+
+    <section class="modal-overlay" id="badgeModal" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="badgeModalTitle" aria-describedby="badgeModalMessage">
+            <div class="badge-celebration">
+                <p class="badge-kicker">Reward unlocked</p>
+                <span class="badge-big-emoji" id="badgeModalEmoji">🏆</span>
+                <h2 id="badgeModalTitle">First Step</h2>
+                <p class="modal-text" id="badgeModalMessage">Complete your first task — +10 bonus credits!</p>
+            </div>
+            <div class="modal-actions center">
+                <button class="btn-ghost" type="button" id="badgeCloseBtn">Awesome!</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="modal-overlay" id="resetModal" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle" aria-describedby="resetModalMessage">
+            <h2 id="resetModalTitle">Remove everything?</h2>
+            <p class="modal-text" id="resetModalMessage">
+                This will permanently remove all your tasks (completed or not), credits, badges and rewards everywhere — including your synced cloud data.
+            </p>
+            <div class="modal-actions">
+                <button class="btn-ghost" type="button" id="cancelResetBtn">Cancel</button>
+                <button class="btn-danger" type="button" id="confirmResetBtn">Yes, Remove</button>
+            </div>
+        </div>
+    </section>
+
+    <aside class="cal-panel" id="calPanel" aria-label="Activity calendar">
+        <div class="cal-panel-head">
+            <div>
+                <p class="cal-panel-kicker">Activity</p>
+                <h2>Calendar</h2>
+            </div>
+            <button class="cal-panel-toggle" id="calPanelToggleBtn" type="button" aria-label="Toggle calendar panel">&minus;</button>
+        </div>
+        <div class="cal-card" aria-label="Activity calendar">
+            <div class="cal-head">
+                <button class="cal-nav" id="calPrev" type="button" aria-label="Previous month">&lsaquo;</button>
+                <div class="cal-title">
+                    <p class="cal-month" id="calMonthLabel">September 2026</p>
+                    <p class="cal-stats" id="calMonthStats"></p>
+                </div>
+                <button class="cal-nav" id="calNext" type="button" aria-label="Next month">&rsaquo;</button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true">
+                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-legend">
+                <span class="legend-item"><i class="swatch done"></i>Completed</span>
+                <span class="legend-item"><i class="swatch frozen"></i>Frozen</span>
+                <span class="legend-item"><i class="swatch today"></i>Today</span>
+            </div>
+        </div>
+    </aside>
+
+    <aside class="rewards-panel" id="rewardsPanel" aria-label="Rewards">
+        <div class="rewards-head">
+            <div>
+                <p class="rewards-kicker">Rewards</p>
+                <h2>Badges &amp; Streaks</h2>
+            </div>
+            <div class="rewards-head-right">
+                <span class="rewards-count" id="rewardsCount">0 / ∞ earned</span>
+                <button class="card-close" id="rewardsToggleBtn" type="button" aria-label="Collapse rewards panel">&minus;</button>
+            </div>
+        </div>
+        <div class="rewards-main">
+            <div class="streak-card" id="streakCard">
+                <span class="streak-emoji">🔥</span>
+                <div class="streak-info">
+                    <p class="streak-value" id="streakValue">No streak yet</p>
+                    <p class="streak-meta" id="streakMeta">Complete a task today to start your streak</p>
+                </div>
+            </div>
+            <div class="streak-track" role="progressbar" aria-label="Progress to next streak reward">
+                <div class="streak-track-fill" id="streakTrackFill"></div>
+            </div>
+            <p class="streak-next" id="streakNext">Next: 🔥 3-day streak → +30 credits</p>
+            <p class="rewards-subhead">Task badges <span class="rewards-sub-count" id="taskBadgesCount">0 / ∞</span></p>
+            <ul class="badges-grid" id="badgesGrid"></ul>
+            <p class="rewards-subhead">Streak badges <span class="rewards-sub-count" id="streakBadgesCount">0 / ∞</span></p>
+            <ul class="badges-grid" id="streakBadgesGrid"></ul>
+        </div>
+    </aside>
+
+    <script>
+        // ============================================================
+        // Firebase (Auth + Firestore) — replaces browser localStorage
+        // ============================================================
+        const FIREBASE_VERSION = '12.19.0';
+        const FIREBASE_TIMEOUT_MS = 12000;
+
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCCipbIu1o20f5AbZd7sTPz8we006C4OsE',
+            authDomain: 'to-do-list-2aab3.firebaseapp.com',
+            projectId: 'to-do-list-2aab3',
+            storageBucket: 'to-do-list-2aab3.firebasestorage.app',
+            messagingSenderId: '308307061942',
+            appId: '1:308307061942:web:9052d92ccbca4832d98a17'
+        };
+
+        const FB_APP_NAME = 'todo-app-main';
+        const fb = { auth: null };
+        const fbLib = { app: null, auth: null, fs: null, db: null, promise: null, failed: false };
+
+        function loadFirebaseLibs() {
+            if (!fbLib.promise) {
+                const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/`;
+                fbLib.promise = Promise.all([
+                    import(`${base}firebase-app.js`),
+                    import(`${base}firebase-auth.js`),
+                    import(`${base}firebase-firestore.js`)
+                ]).then(([appMod, authMod, fsMod]) => {
+                    const app = appMod.getApps().length ? appMod.getApps()[0] : appMod.initializeApp(firebaseConfig, FB_APP_NAME);
+                    fbLib.app = app;
+                    fbLib.auth = authMod;
+                    fbLib.fs = fsMod;
+                    fbLib.db = fsMod.getFirestore(app);
+                    fb.auth = authMod.getAuth(app);
+                    return fb;
+                }).catch((error) => {
+                    fbLib.failed = true;
+                    throw error;
+                });
+            }
+            return fbLib.promise;
+        }
+
+        // Firestore is the source of truth while signed in; localStorage mirrors
+        // the same state as an offline backup. Cloud writes are serialised,
+        // debounced, and retried once on transient errors.
+        const CLOUD_WRITE_DEBOUNCE_MS = 400;
+        const CLOUD_RETRY_DELAY_MS = 1500;
+        const cloudWrite = { queue: Promise.resolve(), timer: 0, lastPayload: '' };
+        let signedInUser = null;
+        let applyingRemoteState = false;
+        let tasksDocRef = null;
+        let unsubTasksSnapshot = null;
+        let pendingMigration = false;
+        let authBusy = false;
+        let authReady = false;
+        let savingNameToCloud = false;
+        let savingCloudName = '';
+        let authMode = 'login';
+
+        const STORAGE_KEYS = {
+            tasks: 'todo.tasks',
+            credits: 'todo.credits',
+            name: 'todo.name',
+            completedCount: 'todo.completedCount',
+            badges: 'todo.badges',
+            streak: 'todo.streak',
+            bestStreak: 'todo.bestStreak',
+            lastCompletedDate: 'todo.lastCompletedDate',
+            streakBadges: 'todo.streakBadges',
+            activity: 'todo.activity',
+            frozenDays: 'todo.frozenDays',
+            lastFreezeMonth: 'todo.lastFreezeMonth'
+        };
+
+        // Task badges: the first ten are fixed; past 100 tasks a new badge is
+        // generated every 25 tasks with growing rewards, so the ladder never
+        // ends. Rewards are derived from the badge id itself (e.g. "badge125"),
+        // keeping saved data and cloud sync correct on every device.
+        const BADGES = [
+            { id: 'first', emoji: '🐣', name: 'First Step', desc: 'Complete your first task', threshold: 1, reward: 10 },
+            { id: 'quick', emoji: '✨', name: 'Quick Starter', desc: 'Complete 2 tasks', threshold: 2, reward: 15 },
+            { id: 'five', emoji: '🔥', name: 'On a Roll', desc: 'Complete 5 tasks', threshold: 5, reward: 25 },
+            { id: 'ten', emoji: '⚡', name: 'Task Machine', desc: 'Complete 10 tasks', threshold: 10, reward: 50 },
+            { id: 'target', emoji: '🎯', name: 'On Target', desc: 'Complete 15 tasks', threshold: 15, reward: 75 },
+            { id: 'twentyfive', emoji: '🚀', name: 'Rocket Pace', desc: 'Complete 25 tasks', threshold: 25, reward: 100 },
+            { id: 'beast', emoji: '🌋', name: 'Unstoppable', desc: 'Complete 40 tasks', threshold: 40, reward: 150 },
+            { id: 'fifty', emoji: '💎', name: 'Task Master', desc: 'Complete 50 tasks', threshold: 50, reward: 200 },
+            { id: 'overachieve', emoji: '🧨', name: 'Overachiever', desc: 'Complete 75 tasks', threshold: 75, reward: 250 },
+            { id: 'hundred', emoji: '👑', name: 'Legend', desc: 'Complete 100 tasks', threshold: 100, reward: 500 }
+        ];
+        const TASK_BADGE_GENERATED_AFTER = 100;
+        const TASK_BADGE_EVERY = 25;
+        const TASK_BADGE_REWARD_STEP = 75;
+        const TASK_BADGE_LOOKAHEAD = 3;
+        const TASK_BADGE_CYCLE = ['👑', '🌋', '💎', '🚀', '🧨', '⚡', '🎯', '🔥', '✨', '🌟'];
+
+        function taskBadgeCount(id) {
+            const match = /^badge(\d+)$/.exec(String(id || ''));
+            return match ? Number(match[1]) : 0;
+        }
+
+        function taskBadgeReward(count) {
+            const fixed = BADGES.find((badge) => badge.threshold === count);
+            if (fixed) return fixed.reward;
+            if (count > TASK_BADGE_GENERATED_AFTER) {
+                const steps = (count - TASK_BADGE_GENERATED_AFTER) / TASK_BADGE_EVERY;
+                if (Number.isInteger(steps) && steps > 0) {
+                    const top = BADGES[BADGES.length - 1];
+                    return top.reward + steps * TASK_BADGE_REWARD_STEP;
+                }
+            }
+            return 0;
+        }
+
+        function buildTaskBadge(count) {
+            const fixed = BADGES.find((badge) => badge.threshold === count);
+            if (fixed) return { ...fixed };
+            return {
+                id: `badge${count}`,
+                emoji: TASK_BADGE_CYCLE[(Math.floor(count / TASK_BADGE_EVERY) - 4) % TASK_BADGE_CYCLE.length],
+                name: `${count}-Task Milestone`,
+                desc: `Complete ${count} tasks`,
+                threshold: count,
+                reward: taskBadgeReward(count)
+            };
+        }
+
+        // Builds the visible ladder: all fixed badges plus every generated one
+        // up to a little beyond the current completed count, so there is always
+        // a next goal on the board.
+        function getTaskBadges() {
+            const badges = BADGES.slice();
+            const ceiling = Math.ceil(Math.max(completedCount, TASK_BADGE_GENERATED_AFTER) / TASK_BADGE_EVERY) * TASK_BADGE_EVERY;
+            const lastCount = ceiling + TASK_BADGE_EVERY * TASK_BADGE_LOOKAHEAD;
+            for (let count = TASK_BADGE_GENERATED_AFTER + TASK_BADGE_EVERY; count <= lastCount; count += TASK_BADGE_EVERY) {
+                badges.push(buildTaskBadge(count));
+            }
+            return badges;
+        }
+
+        // Streak milestones: the first eight are fixed; after 60 days a new
+        // milestone is generated every 30 days with growing rewards, so the
+        // ladder never ends. Rewards are derived from the milestone id itself
+        // (e.g. "streak90"), which keeps saved data and cloud sync correct on
+        // every device even though each device generates its own list.
+        const STREAK_MILESTONE_STEPS = [3, 5, 7, 10, 14, 21, 30, 60];
+        const STREAK_MILESTONE_REWARDS = { 3: 30, 5: 50, 7: 75, 10: 100, 14: 150, 21: 250, 30: 400, 60: 600 };
+        const STREAK_MILESTONE_EMOJIS = { 3: '🔥', 5: '🧲', 7: '🌟', 10: '💫', 14: '💪', 21: '🧙', 30: '🏆', 60: '🏅' };
+        const STREAK_MILESTONE_ENDLESS_AFTER = 60;
+        const STREAK_MILESTONE_EVERY = 30;
+        const STREAK_MILESTONE_REWARD_STEP = 100;
+        const STREAK_MILESTONE_LOOKAHEAD = 3;
+        const STREAK_MILESTONE_CYCLE = ['🏅', '🏆', '🌟', '🔥', '💎', '👑', '🚀', '💫', '🎯', '🧲'];
+
+        function streakMilestoneDays(id) {
+            const match = /^streak(\d+)$/.exec(String(id || ''));
+            return match ? Number(match[1]) : 0;
+        }
+
+        function streakMilestoneReward(days) {
+            if (STREAK_MILESTONE_REWARDS[days]) return STREAK_MILESTONE_REWARDS[days];
+            if (days > STREAK_MILESTONE_ENDLESS_AFTER) {
+                const steps = (days - STREAK_MILESTONE_ENDLESS_AFTER) / STREAK_MILESTONE_EVERY;
+                if (Number.isInteger(steps) && steps > 0) {
+                    return STREAK_MILESTONE_REWARDS[STREAK_MILESTONE_ENDLESS_AFTER] + steps * STREAK_MILESTONE_REWARD_STEP;
+                }
+            }
+            return 0;
+        }
+
+        function buildStreakMilestone(days) {
+            const emoji = STREAK_MILESTONE_EMOJIS[days]
+                || STREAK_MILESTONE_CYCLE[(Math.floor(days / STREAK_MILESTONE_EVERY) - 2) % STREAK_MILESTONE_CYCLE.length];
+            return {
+                id: `streak${days}`,
+                emoji,
+                name: `${days}-Day Streak`,
+                desc: `Complete tasks ${days} days in a row`,
+                threshold: days,
+                reward: streakMilestoneReward(days)
+            };
+        }
+
+        // Builds the visible ladder: all fixed milestones plus every generated
+        // one up to a little beyond the current streak, so there is always a
+        // next goal on the board.
+        function getStreakMilestones() {
+            const milestones = STREAK_MILESTONE_STEPS.map(buildStreakMilestone);
+            const ceiling = Math.ceil(Math.max(streak, STREAK_MILESTONE_ENDLESS_AFTER) / STREAK_MILESTONE_EVERY) * STREAK_MILESTONE_EVERY;
+            const lastDays = ceiling + STREAK_MILESTONE_EVERY * STREAK_MILESTONE_LOOKAHEAD;
+            for (let days = STREAK_MILESTONE_ENDLESS_AFTER + STREAK_MILESTONE_EVERY; days <= lastDays; days += STREAK_MILESTONE_EVERY) {
+                milestones.push(buildStreakMilestone(days));
+            }
+            return milestones;
+        }
+
+        let tasks = [];
+        let netCredits = 0;
+        let editingTaskId = null;
+        let completedCount = 0;
+        let claimedBadgeIds = new Set();
+        let streak = 0;
+        let bestStreak = 0;
+        let lastCompletedDate = '';
+        let claimedStreakBadges = new Set();
+        let activity = {};
+        let frozenDays = new Set();
+        let frozenMissedDay = '';
+        let lastFreezeMonth = '';
+        let calYear = new Date().getFullYear();
+        let calMonth = new Date().getMonth();
+
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const DAYS_2 = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+        function dateKey(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${month}-${day}`;
+        }
+
+        function dateFromKey(key) {
+            const parts = key.split('-').map(Number);
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function daysBetween(fromKey, toKey) {
+            const from = dateFromKey(fromKey);
+            const to = dateFromKey(toKey);
+            return Math.round((to - from) / 86400000);
+        }
+
+        function monthKeyNow() {
+            return dateKey(0).slice(0, 7);
+        }
+
+        // Auto-freeze: when exactly one day is missed (no task completed that day),
+        // the streak is kept and that day is marked as frozen. Missing two or more
+        // days in a row resets the streak. The freeze can only save the streak once
+        // per calendar month — once it is spent, a missed day resets the streak.
+        function evaluateStreakFreeze() {
+            frozenMissedDay = '';
+            if (!lastCompletedDate || streak <= 0) return;
+            const gap = daysBetween(lastCompletedDate, dateKey(0));
+            if (gap === 2) {
+                const missed = dateKey(-1);
+                const freezeAvailable = lastFreezeMonth !== monthKeyNow();
+                if (freezeAvailable || frozenDays.has(missed)) {
+                    frozenDays.add(missed);
+                    frozenMissedDay = missed;
+                    if (freezeAvailable) lastFreezeMonth = monthKeyNow();
+                } else {
+                    streak = 0;
+                }
+            } else if (gap >= 3) {
+                streak = 0;
+            }
+        }
+
+        function keyFromDate(d) {
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${month}-${day}`;
+        }
+
+        function sumActivity(fromDate, toDate) {
+            let sum = 0;
+            const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+            const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+            while (cursor <= end) {
+                sum += activity[keyFromDate(cursor)] || 0;
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return sum;
+        }
+
+        const taskList = document.getElementById('taskList');
+        const taskInput = document.getElementById('taskInput');
+        const taskDateInput = document.getElementById('taskDateInput');
+        const taskCategoryInput = document.getElementById('taskCategoryInput');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const taskForm = document.getElementById('taskForm');
+        const filterDay = document.getElementById('filterDay');
+        const filterDate = document.getElementById('filterDate');
+        const filterCategory = document.getElementById('filterCategory');
+        const filterText = document.getElementById('filterText');
+        const taskFilterSummary = document.getElementById('taskFilterSummary');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+        taskDateInput.value = dateKey(0);
+
+        const TASK_CATEGORIES = ['Fitness', 'Work', 'Education', 'Health', 'Home', 'Finance', 'Errands', 'Personal', 'Social', 'Leisure', 'Travel', 'Other'];
+        const CATEGORY_ALIASES = { Study: 'Education' };
+        const CATEGORY_RULES = [
+            { category: 'Fitness', keywords: ['gym', 'workout', 'exercise', 'run', 'running', 'yoga', 'cardio', 'training', 'lift', 'weights', 'fitness'] },
+            { category: 'Work', keywords: ['meeting', 'project', 'email', 'client', 'office', 'deadline', 'report', 'presentation', 'call', 'work'] },
+            { category: 'Education', keywords: ['study', 'subject', 'subjects', 'school', 'college', 'university', 'homework', 'assignment', 'class', 'lecture', 'exam', 'revision', 'research', 'lesson', 'math', 'mathematics', 'science', 'physics', 'chemistry', 'biology', 'english', 'history', 'geography', 'education', 'read notes'] },
+            { category: 'Health', keywords: ['doctor', 'medicine', 'therapy', 'appointment', 'checkup', 'vitamin', 'sleep', 'water', 'health'] },
+            { category: 'Home', keywords: ['clean', 'laundry', 'dishes', 'vacuum', 'organize', 'declutter', 'repair', 'home'] },
+            { category: 'Finance', keywords: ['pay', 'bill', 'budget', 'invoice', 'tax', 'bank', 'savings', 'finance'] },
+            { category: 'Errands', keywords: ['buy', 'shopping', 'grocery', 'pickup', 'drop off', 'post office', 'pharmacy', 'errand'] },
+            { category: 'Personal', keywords: ['journal', 'meditate', 'relax', 'self care', 'reflection', 'personal'] },
+            { category: 'Social', keywords: ['friend', 'party', 'dinner', 'lunch', 'meetup', 'date', 'call mom', 'social'] },
+            { category: 'Leisure', keywords: ['movie', 'game', 'music', 'reading', 'read', 'hobby', 'leisure'] },
+            { category: 'Travel', keywords: ['travel', 'trip', 'flight', 'hotel', 'pack', 'airport'] }
+        ];
+
+        let taskDayFilter = 'all';
+        let taskDateFilter = '';
+        let taskCategoryFilter = 'all';
+        let taskTextFilter = '';
+
+        function normalizeDateValue(value) {
+            return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : dateKey(0);
+        }
+
+        function inferCategory(text) {
+            const lowered = String(text || '').toLowerCase();
+            for (const rule of CATEGORY_RULES) {
+                if (rule.keywords.some((keyword) => lowered.includes(keyword))) {
+                    return rule.category;
+                }
+            }
+            return 'Other';
+        }
+
+        function normalizeTask(task) {
+            const text = typeof task.text === 'string' ? task.text : '';
+            const mode = task.categoryMode === 'manual' ? 'manual' : 'auto';
+            const inferred = inferCategory(text);
+            const savedCategory = CATEGORY_ALIASES[task.category] || task.category;
+            const category = mode === 'manual' && TASK_CATEGORIES.includes(savedCategory)
+                ? savedCategory
+                : inferred;
+            return {
+                id: String(task.id || Date.now() + Math.random()),
+                text,
+                completed: Boolean(task.completed),
+                taskDate: normalizeDateValue(task.taskDate || task.createdAt),
+                category: mode === 'manual' && TASK_CATEGORIES.includes(savedCategory) ? savedCategory : category,
+                categoryMode: mode,
+                createdAt: normalizeDateValue(task.createdAt || task.taskDate)
+            };
+        }
+
+        function formatTaskDateLabel(dateValue) {
+            const d = dateFromKey(normalizeDateValue(dateValue));
+            return `${DAYS_FULL[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
+        }
+
+        function matchesTaskFilters(task) {
+            const dateValue = normalizeDateValue(task.taskDate);
+            const taskDate = dateFromKey(dateValue);
+            if (taskDayFilter !== 'all' && DAYS_FULL[taskDate.getDay()] !== taskDayFilter) return false;
+            if (taskDateFilter && dateValue !== taskDateFilter) return false;
+            if (taskCategoryFilter !== 'all' && task.category !== taskCategoryFilter) return false;
+            if (taskTextFilter && !task.text.toLowerCase().includes(taskTextFilter)) return false;
+            return true;
+        }
+
+        function updateTaskFilterSummary(totalCount, visibleCount) {
+            const parts = [];
+            if (taskDayFilter !== 'all') parts.push(taskDayFilter);
+            if (taskDateFilter) parts.push(formatTaskDateLabel(taskDateFilter));
+            if (taskCategoryFilter !== 'all') parts.push(taskCategoryFilter);
+            if (taskTextFilter) parts.push(`"${taskTextFilter}"`);
+
+            if (parts.length === 0) {
+                taskFilterSummary.textContent = visibleCount === totalCount
+                    ? `Showing all ${totalCount} task${totalCount === 1 ? '' : 's'}.`
+                    : `Showing ${visibleCount} of ${totalCount} tasks.`;
+                return;
+            }
+
+            taskFilterSummary.textContent = `Showing ${visibleCount} of ${totalCount} task${totalCount === 1 ? '' : 's'} filtered by ${parts.join(' · ')}.`;
+        }
+
+        function resetTaskFilters() {
+            taskDayFilter = 'all';
+            taskDateFilter = '';
+            taskCategoryFilter = 'all';
+            taskTextFilter = '';
+            filterDay.value = 'all';
+            filterDate.value = '';
+            filterCategory.value = 'all';
+            filterText.value = '';
+            renderTasks();
+        }
+
+        filterDay.addEventListener('change', () => {
+            taskDayFilter = filterDay.value;
+            renderTasks();
+        });
+
+        filterDate.addEventListener('change', () => {
+            taskDateFilter = filterDate.value;
+            renderTasks();
+        });
+
+        filterCategory.addEventListener('change', () => {
+            taskCategoryFilter = filterCategory.value;
+            renderTasks();
+        });
+
+        filterText.addEventListener('input', () => {
+            taskTextFilter = filterText.value.trim().toLowerCase();
+            renderTasks();
+        });
+
+        clearFiltersBtn.addEventListener('click', resetTaskFilters);
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
+            localStorage.setItem(STORAGE_KEYS.credits, String(netCredits));
+            localStorage.setItem(STORAGE_KEYS.completedCount, String(completedCount));
+            localStorage.setItem(STORAGE_KEYS.badges, JSON.stringify([...claimedBadgeIds]));
+            localStorage.setItem(STORAGE_KEYS.streak, String(streak));
+            localStorage.setItem(STORAGE_KEYS.bestStreak, String(bestStreak));
+            localStorage.setItem(STORAGE_KEYS.lastCompletedDate, lastCompletedDate);
+            localStorage.setItem(STORAGE_KEYS.streakBadges, JSON.stringify([...claimedStreakBadges]));
+            localStorage.setItem(STORAGE_KEYS.activity, JSON.stringify(activity));
+            localStorage.setItem(STORAGE_KEYS.frozenDays, JSON.stringify([...frozenDays]));
+            localStorage.setItem(STORAGE_KEYS.lastFreezeMonth, lastFreezeMonth);
+            queueCloudWrite('state');
+        }
+
+        const SYNC_COPY = {
+            connecting: 'Connecting to Firebase…',
+            signedOut: 'Sign in to sync your tasks to the cloud.',
+            synced: 'Synced to cloud',
+            offline: "You're offline — changes stay on this device until you sign in."
+        };
+        let cloudErrorTimer = 0;
+        let syncBannerTimer = 0;
+
+        function withTimeout(promise, ms = FIREBASE_TIMEOUT_MS, label = 'operation') {
+            let timerId;
+            const timeout = new Promise((resolve, reject) => {
+                timerId = setTimeout(() => reject(new Error(`Timed out after ${ms}ms during ${label}`)), ms);
+            });
+            return Promise.race([promise, timeout]).finally(() => clearTimeout(timerId));
+        }
+
+        function authErrorMessage(error) {
+            const code = error && error.code ? String(error.code) : '';
+            const map = {
+                'auth/invalid-email': 'That email address doesn\'t look right.',
+                'auth/user-not-found': 'No account found with that email — try signing up instead.',
+                'auth/wrong-password': 'Incorrect password — try again or reset it.',
+                'auth/invalid-credential': 'Incorrect email or password.',
+                'auth/invalid-login-credentials': 'Incorrect email or password.',
+                'auth/too-many-requests': 'Too many attempts — please wait a moment and try again.',
+                'auth/email-already-in-use': 'An account already exists with that email — try logging in.',
+                'auth/weak-password': 'Please choose a stronger password (at least 6 characters).',
+                'auth/network-request-failed': 'Network error — check your connection and try again.'
+            };
+            return map[code] || (error && error.message ? String(error.message).replace('Firebase:', '').trim() : 'Something went wrong. Please try again.');
+        }
+
+        function setSyncStatus(message, tone = 'idle', retryable = false) {
+            if (!syncText || !syncBanner) return;
+            syncText.textContent = message;
+            syncBanner.dataset.tone = tone;
+            if (syncRetry) syncRetry.hidden = !retryable;
+            clearTimeout(syncBannerTimer);
+            syncBanner.hidden = false;
+            if (tone === 'ok') {
+                syncBannerTimer = setTimeout(() => { syncBanner.hidden = true; }, 2600);
+            }
+        }
+
+        function showCloudError(error) {
+            console.warn('[cloud] sync error', error);
+            setSyncStatus('Cloud sync failed — your data is safe on this device and will retry.', 'error', true);
+            clearTimeout(cloudErrorTimer);
+            cloudErrorTimer = setTimeout(() => {
+                if (signedInUser) setSyncStatus(SYNC_COPY.synced, 'ok');
+            }, 8000);
+        }
+
+        function serializeStateForCloud() {
+            return {
+                tasks: tasks.map((task) => ({
+                    id: String(task.id),
+                    text: String(task.text || ''),
+                    completed: Boolean(task.completed),
+                    taskDate: task.taskDate || dateKey(0),
+                    category: task.category || 'Other',
+                    categoryMode: task.categoryMode === 'manual' ? 'manual' : 'auto',
+                    createdAt: task.createdAt || dateKey(0)
+                })),
+                credits: netCredits,
+                name: profileName,
+                completedCount,
+                badges: [...claimedBadgeIds],
+                streak,
+                bestStreak,
+                lastCompletedDate,
+                streakBadges: [...claimedStreakBadges],
+                activity,
+                frozenDays: [...frozenDays],
+                lastFreezeMonth,
+                updatedAt: Date.now()
+            };
+        }
+
+        function performCloudWriteNow() {
+            if (!signedInUser || applyingRemoteState || !tasksDocRef) return;
+            clearTimeout(cloudWrite.timer);
+            cloudWrite.timer = 0;
+            const payload = serializeStateForCloud();
+            const serialized = JSON.stringify(payload);
+            if (serialized === cloudWrite.lastPayload) return;
+            cloudWrite.lastPayload = serialized;
+            cloudWrite.queue = cloudWrite.queue.then(async () => {
+                let current = payload;
+                let lastError = null;
+                for (let attempt = 0; attempt < 2; attempt += 1) {
+                    try {
+                        await withTimeout(fbLib.fs.setDoc(tasksDocRef, current), 15000, 'cloud save');
+                        return;
+                    } catch (error) {
+                        lastError = error;
+                    }
+                    if (attempt === 0) {
+                        await new Promise((resolve) => setTimeout(resolve, CLOUD_RETRY_DELAY_MS));
+                        if (!signedInUser || applyingRemoteState) return;
+                        current = serializeStateForCloud();
+                    }
+                }
+                cloudWrite.lastPayload = '';
+                showCloudError(lastError);
+            }).catch((error) => {
+                cloudWrite.lastPayload = '';
+                showCloudError(error);
+            });
+        }
+
+        function queueCloudWrite(reason) {
+            if (!signedInUser || applyingRemoteState) return;
+            if (reason === 'name') {
+                cloudWrite.queue = cloudWrite.queue.then(async () => {
+                    if (!signedInUser || applyingRemoteState || !tasksDocRef) return;
+                    try {
+                        await withTimeout(fbLib.fs.setDoc(tasksDocRef, { name: profileName, updatedAt: Date.now() }, { merge: true }), 15000, 'name save');
+                    } catch (error) {
+                        console.warn('[cloud] profile name write failed', error);
+                    }
+                });
+                return;
+            }
+            clearTimeout(cloudWrite.timer);
+            cloudWrite.timer = setTimeout(performCloudWriteNow, CLOUD_WRITE_DEBOUNCE_MS);
+        }
+
+
+        function loadState() {
+            // Local mirror loads first (instant), then the cloud snapshot below
+            // overwrites it once Firestore responds.
+            try {
+                const storedTasks = JSON.parse(localStorage.getItem(STORAGE_KEYS.tasks) || '[]');
+                tasks = Array.isArray(storedTasks) ? storedTasks.map(normalizeTask) : [];
+            } catch (error) {
+                tasks = [];
+            }
+
+            const storedCount = Number(localStorage.getItem(STORAGE_KEYS.completedCount));
+            completedCount = Number.isFinite(storedCount) && storedCount >= 0
+                ? storedCount
+                : tasks.filter((task) => task.completed).length;
+
+            try {
+                const storedBadges = JSON.parse(localStorage.getItem(STORAGE_KEYS.badges) || '[]');
+                claimedBadgeIds = new Set(Array.isArray(storedBadges) ? storedBadges : []);
+            } catch (error) {
+                claimedBadgeIds = new Set();
+            }
+
+            const storedStreak = Number(localStorage.getItem(STORAGE_KEYS.streak));
+            streak = Number.isFinite(storedStreak) && storedStreak >= 0 ? storedStreak : 0;
+            const storedBest = Number(localStorage.getItem(STORAGE_KEYS.bestStreak));
+            bestStreak = Number.isFinite(storedBest) && storedBest >= 0 ? storedBest : 0;
+            lastCompletedDate = localStorage.getItem(STORAGE_KEYS.lastCompletedDate) || '';
+
+            try {
+                const storedActivity = JSON.parse(localStorage.getItem(STORAGE_KEYS.activity) || '{}');
+                activity = storedActivity && typeof storedActivity === 'object' && !Array.isArray(storedActivity)
+                    ? storedActivity
+                    : {};
+            } catch (error) {
+                activity = {};
+            }
+
+            try {
+                const storedFrozen = JSON.parse(localStorage.getItem(STORAGE_KEYS.frozenDays) || '[]');
+                frozenDays = new Set(Array.isArray(storedFrozen) ? storedFrozen : []);
+            } catch (error) {
+                frozenDays = new Set();
+            }
+            lastFreezeMonth = localStorage.getItem(STORAGE_KEYS.lastFreezeMonth) || '';
+
+            // Auto-freeze: one missed day keeps the streak (once per month), two or more reset it.
+            evaluateStreakFreeze();
+
+            try {
+                const storedStreakBadges = JSON.parse(localStorage.getItem(STORAGE_KEYS.streakBadges) || '[]');
+                claimedStreakBadges = new Set(Array.isArray(storedStreakBadges) ? storedStreakBadges : []);
+            } catch (error) {
+                claimedStreakBadges = new Set();
+            }
+
+            // Restore minimised panel state so toggled panels stay hidden across reloads.
+            try {
+                const panels = JSON.parse(localStorage.getItem('todo.panelsCollapsed') || '{}');
+                if (panels && typeof panels.rewards === 'boolean' && panels.rewards) collapseRewardsPanel();
+                if (panels && typeof panels.calendar === 'boolean' && panels.calendar) collapseCalPanel();
+            } catch (error) {
+                // ignore malformed panel-preference storage.
+            }
+
+            // Existing users get badges they have already earned (claimed silently on load).
+            claimEligibleBadges();
+            claimEligibleStreakBadges();
+            syncCreditsFromTasks();
+            saveState();
+        }
+
+        function parseCloudState(raw) {
+            if (!raw || typeof raw !== 'object') return null;
+            try {
+                return {
+                    tasks: Array.isArray(raw.tasks) ? raw.tasks.map(normalizeTask) : [],
+                    credits: Number(raw.credits) || 0,
+                    name: typeof raw.name === 'string' ? raw.name : '',
+                    completedCount: Number(raw.completedCount) || 0,
+                    badges: Array.isArray(raw.badges) ? raw.badges : [],
+                    streak: Number(raw.streak) || 0,
+                    bestStreak: Number(raw.bestStreak) || 0,
+                    lastCompletedDate: typeof raw.lastCompletedDate === 'string' ? raw.lastCompletedDate : '',
+                    streakBadges: Array.isArray(raw.streakBadges) ? raw.streakBadges : [],
+                    activity: raw.activity && typeof raw.activity === 'object' && !Array.isArray(raw.activity) ? raw.activity : {},
+                    frozenDays: Array.isArray(raw.frozenDays) ? raw.frozenDays : [],
+                    lastFreezeMonth: typeof raw.lastFreezeMonth === 'string' ? raw.lastFreezeMonth : ''
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        // ==== Auth session + live cloud sync ====
+        function stopTasksSnapshot() {
+            if (unsubTasksSnapshot) {
+                unsubTasksSnapshot();
+                unsubTasksSnapshot = null;
+            }
+            tasksDocRef = null;
+        }
+
+        function detachAuthListener() {
+            if (unsubAuth) {
+                unsubAuth();
+                unsubAuth = null;
+            }
+        }
+
+        function applyCloudSnapshot(raw) {
+            const parsed = parseCloudState(raw);
+            if (!parsed) return;
+            applyingRemoteState = true;
+            try {
+                tasks = parsed.tasks;
+                completedCount = parsed.completedCount;
+                claimedBadgeIds = new Set(parsed.badges);
+                streak = parsed.streak;
+                bestStreak = parsed.bestStreak;
+                lastCompletedDate = parsed.lastCompletedDate;
+                claimedStreakBadges = new Set(parsed.streakBadges);
+                activity = parsed.activity;
+                frozenDays = new Set(parsed.frozenDays);
+                lastFreezeMonth = parsed.lastFreezeMonth;
+                frozenMissedDay = '';
+                netCredits = parsed.credits;
+                if (!savingNameToCloud && parsed.name !== profileName) {
+                    profileName = parsed.name;
+                    localStorage.setItem(STORAGE_KEYS.name, profileName);
+                    renderProfile();
+                }
+                saveState();
+            } finally {
+                applyingRemoteState = false;
+            }
+            renderTasks();
+        }
+
+        function startTasksSnapshot(user) {
+            const { fs } = fbLib;
+            tasksDocRef = fs.doc(fbLib.db, 'users', user.uid);
+            unsubTasksSnapshot = fs.onSnapshot(tasksDocRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    // Empty cloud doc: first sign-in for this account — push local data once.
+                    if (!pendingMigration) {
+                        pendingMigration = true;
+                        setTimeout(() => {
+                            if (signedInUser && pendingMigration) {
+                                pendingMigration = false;
+                                performCloudWriteNow();
+                            }
+                        }, 600);
+                    }
+                    setSyncStatus('Synced to cloud', 'ok');
+                    return;
+                }
+                pendingMigration = false;
+                if (applyingRemoteState) return;
+                applyCloudSnapshot(snapshot.data());
+                setSyncStatus('Synced to cloud', 'ok');
+            }, (error) => {
+                console.warn('[cloud] snapshot error', error);
+                setSyncStatus('Cloud sync interrupted — retrying automatically.', 'error', true);
+            });
+        }
+
+        function handleSignedIn(user) {
+            signedInUser = user;
+            forceSignedOutView = false;
+            authEmail.value = '';
+            authPassword.value = '';
+            authName.value = '';
+            hideAuthMessage();
+            const name = user.displayName || localStorage.getItem(STORAGE_KEYS.name) || '';
+            profileName = name;
+            profileNameInput.value = name;
+            if (name) localStorage.setItem(STORAGE_KEYS.name, name);
+            renderProfile();
+            updateSignedInUI();
+            startTasksSnapshot(user);
+            setSyncStatus('Syncing your data…', 'busy');
+        }
+
+        function handleSignedOut() {
+            signedInUser = null;
+            stopTasksSnapshot();
+            clearTimeout(cloudWrite.timer);
+            forgotForm.hidden = true;
+            authForm.hidden = false;
+            hideAuthMessage();
+            updateSignedInUI();
+            if (forceSignedOutView) {
+                setSyncStatus(SYNC_COPY.signedOut, 'idle');
+            } else {
+                setSyncStatus(SYNC_COPY.connecting, 'busy');
+            }
+        }
+
+        function updateSignedInUI() {
+            const authed = Boolean(signedInUser);
+            authSection.hidden = authed;
+            signedInView.hidden = !authed;
+            if (authed) {
+                accountEmail.textContent = signedInUser.email || 'Signed in';
+                const initial = (signedInUser.displayName || signedInUser.email || '?').trim().charAt(0).toUpperCase() || '?';
+                accountAvatar.textContent = initial;
+            }
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            authForm.dataset.mode = mode;
+            authNameField.hidden = mode !== 'signup';
+            authName.hidden = mode !== 'signup';
+            authName.required = mode === 'signup';
+            authPrimaryBtn.textContent = mode === 'signup' ? 'Create Account' : 'Log In';
+            authSwitchModeBtn.textContent = mode === 'signup' ? 'Log in instead' : 'Need an account? Sign up';
+            authSwitchHint.textContent = mode === 'signup' ? 'Already have an account?' : 'New here?';
+            authPassword.setAttribute('autocomplete', mode === 'signup' ? 'new-password' : 'current-password');
+            hideAuthMessage();
+        }
+
+        function showAuthMessage(el, text) {
+            hideAuthMessage();
+            el.textContent = text;
+            el.hidden = false;
+        }
+
+        function hideAuthMessage() {
+            if (!authError || !authSuccess) return;
+            authError.hidden = true;
+            authSuccess.hidden = true;
+        }
+
+        function setAuthBusy(busy) {
+            authBusy = busy;
+            authPrimaryBtn.disabled = busy;
+            authSwitchModeBtn.disabled = busy;
+            forgotBtn.disabled = busy;
+            if (busy) {
+                authPrimaryBtn.innerHTML = `${SPINNER_SVG}<span>${authMode === 'signup' ? 'Creating account…' : 'Logging in…'}</span>`;
+            } else {
+                authPrimaryBtn.textContent = authMode === 'signup' ? 'Create Account' : 'Log In';
+            }
+        }
+
+        function toggleAuthPassword() {
+            const showing = authPassword.type === 'text';
+            authPassword.type = showing ? 'password' : 'text';
+            authPasswordToggle.setAttribute('aria-pressed', String(!showing));
+            authPasswordToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        }
+
+        function showForgotForm() {
+            authForm.hidden = true;
+            forgotForm.hidden = false;
+            hideAuthMessage();
+            forgotEmail.value = authEmail.value;
+            forgotEmail.focus();
+        }
+
+        function hideForgotForm() {
+            forgotForm.hidden = true;
+            authForm.hidden = false;
+            hideAuthMessage();
+            authEmail.focus();
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            if (authBusy) return;
+            const email = authEmail.value.trim();
+            const password = authPassword.value;
+            const name = authName.value.trim();
+            if (!email || !password) {
+                showAuthMessage(authError, 'Please fill in your email and password.');
+                return;
+            }
+            if (authMode === 'signup' && password.length < 6) {
+                showAuthMessage(authError, 'Password must be at least 6 characters.');
+                return;
+            }
+            setAuthBusy(true);
+            hideAuthMessage();
+            try {
+                await loadFirebaseLibs();
+                const { auth: authMod } = fbLib;
+                if (authMode === 'signup') {
+                    const cred = await withTimeout(authMod.createUserWithEmailAndPassword(fb.auth, email, password), 15000, 'account creation');
+                    if (name) {
+                        try { await withTimeout(authMod.updateProfile(cred.user, { displayName: name }), 8000, 'profile update'); } catch (_) { /* non-fatal */ }
+                    }
+                } else {
+                    await withTimeout(authMod.signInWithEmailAndPassword(fb.auth, email, password), 15000, 'login');
+                }
+            } catch (error) {
+                showAuthMessage(authError, authErrorMessage(error));
+            } finally {
+                setAuthBusy(false);
+            }
+        }
+
+        async function handleForgotPassword() {
+            if (authBusy) return;
+            const email = (forgotEmail.value || '').trim() || authEmail.value.trim();
+            if (!email) {
+                showAuthMessage(authError, 'Enter your email first, then tap reset.');
+                return;
+            }
+            setAuthBusy(true);
+            try {
+                await loadFirebaseLibs();
+                await withTimeout(fbLib.auth.sendPasswordResetEmail(fb.auth, email), 15000, 'password reset');
+                showAuthMessage(authSuccess, `Reset link sent to ${email}. Check your inbox.`);
+            } catch (error) {
+                showAuthMessage(authError, authErrorMessage(error));
+            } finally {
+                setAuthBusy(false);
+            }
+        }
+
+        async function handleLogout() {
+            if (!fb.auth || !signedInUser) return;
+            try {
+                forceSignedOutView = true;
+                await fbLib.auth.signOut(fb.auth);
+            } catch (error) {
+                forceSignedOutView = false;
+                console.warn('[auth] logout failed', error);
+            }
+        }
+
+        async function initFirebase() {
+            try {
+                await withTimeout(loadFirebaseLibs(), FIREBASE_TIMEOUT_MS, 'Firebase load');
+                const { auth: authMod } = fbLib;
+                unsubAuth = authMod.onAuthStateChanged(fb.auth, (user) => {
+                    authReady = true;
+                    if (user) handleSignedIn(user);
+                    else handleSignedOut();
+                });
+            } catch (error) {
+                console.warn('[auth] init failed', error);
+                setSyncStatus(SYNC_COPY.offline, 'error', true);
+            }
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Total Credits: ${netCredits}`;
+        }
+
+        function syncCreditsFromTasks() {
+            const baseCredits = tasks.filter((task) => task.completed).length * 10;
+            let bonusCredits = 0;
+            // Fixed task badges keep their legacy ids ('first', 'hundred', …).
+            BADGES.forEach((badge) => {
+                if (claimedBadgeIds.has(badge.id)) bonusCredits += badge.reward;
+            });
+            // Endless generated task badges: rewards are derived from the claimed
+            // badge ids themselves, so credits stay correct even when the visible
+            // ladder grows or tasks are reset.
+            claimedBadgeIds.forEach((id) => {
+                const count = taskBadgeCount(id);
+                if (count) bonusCredits += taskBadgeReward(count);
+            });
+            // Endless streak milestones: rewards are derived from the claimed
+            // milestone ids themselves, so credits stay correct even when the
+            // visible ladder grows or the streak later resets.
+            claimedStreakBadges.forEach((id) => {
+                const days = streakMilestoneDays(id);
+                if (days) bonusCredits += streakMilestoneReward(days);
+            });
+            netCredits = baseCredits + bonusCredits;
+            updateScoreDisplay();
+        }
+
+        const EDIT_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
+
+        function createTaskRow(task) {
+            const li = document.createElement('li');
+            li.className = `task-row${task.completed ? ' completed' : ''}`;
+            li.dataset.id = task.id;
+
+            const body = document.createElement('div');
+            body.className = 'task-body';
+
+            const dot = document.createElement('span');
+            dot.className = 'status-dot';
+            body.appendChild(dot);
+
+            const content = document.createElement('div');
+            content.className = 'task-content';
+
+            if (editingTaskId === task.id) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'edit-input';
+                input.value = task.text;
+                input.setAttribute('aria-label', 'Edit task name');
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveEditedTask(task.id);
+                    } else if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cancelEditTask();
+                    }
+                });
+                content.appendChild(input);
+            } else {
+                const text = document.createElement('span');
+                text.className = 'task-text';
+                text.textContent = task.text;
+                content.appendChild(text);
+
+                if (!task.completed) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'icon-btn inline';
+                    editBtn.type = 'button';
+                    editBtn.title = 'Edit task name';
+                    editBtn.setAttribute('aria-label', 'Edit task name');
+                    editBtn.innerHTML = EDIT_ICON;
+                    editBtn.addEventListener('click', () => startEditingTask(task.id));
+                    content.appendChild(editBtn);
+                }
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'task-meta';
+
+            const categoryChip = document.createElement('span');
+            categoryChip.className = 'task-chip category';
+            categoryChip.textContent = task.category || 'Other';
+            meta.appendChild(categoryChip);
+
+            const dateChip = document.createElement('span');
+            dateChip.className = 'task-chip';
+            dateChip.textContent = formatTaskDateLabel(task.taskDate);
+            meta.appendChild(dateChip);
+
+            content.appendChild(meta);
+            body.appendChild(content);
+
+            const actions = document.createElement('div');
+            actions.className = 'task-actions';
+
+            if (editingTaskId === task.id) {
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'complete-btn';
+                saveBtn.type = 'button';
+                saveBtn.textContent = 'Save';
+                saveBtn.addEventListener('click', () => saveEditedTask(task.id));
+                actions.appendChild(saveBtn);
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'delete-btn';
+                cancelBtn.type = 'button';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.addEventListener('click', () => cancelEditTask());
+                actions.appendChild(cancelBtn);
+            } else if (task.completed) {
+                const check = document.createElement('span');
+                check.className = 'checkmark';
+                check.textContent = 'Completed';
+                actions.appendChild(check);
+            } else {
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'complete-btn';
+                completeBtn.type = 'button';
+                completeBtn.textContent = 'Complete';
+                completeBtn.addEventListener('click', () => completeTask(task.id));
+                actions.appendChild(completeBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.type = 'button';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.addEventListener('click', () => deleteTask(task.id));
+                actions.appendChild(deleteBtn);
+            }
+
+            li.appendChild(body);
+            li.appendChild(actions);
+            return li;
+        }
+
+        function renderTasks() {
+            taskList.innerHTML = '';
+            const visibleTasks = tasks.filter(matchesTaskFilters);
+            if (visibleTasks.length === 0) {
+                const empty = document.createElement('li');
+                empty.className = 'empty-filter-state';
+                empty.textContent = tasks.length === 0
+                    ? 'No tasks yet. Add one above and it will be tagged with a category and date.'
+                    : 'No tasks match the current filters.';
+                taskList.appendChild(empty);
+            } else {
+                visibleTasks.forEach((task) => {
+                    taskList.appendChild(createTaskRow(task));
+                });
+            }
+            updateTaskFilterSummary(tasks.length, visibleTasks.length);
+            updateScoreDisplay();
+            renderBadges();
+            renderStreak();
+            renderCalendar();
+            renderPerformance();
+
+            if (editingTaskId) {
+                const input = taskList.querySelector('.edit-input');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }
+        }
+
+        function claimEligibleBadges() {
+            const newlyClaimed = [];
+            getTaskBadges().forEach((badge) => {
+                if (!claimedBadgeIds.has(badge.id) && completedCount >= badge.threshold) {
+                    claimedBadgeIds.add(badge.id);
+                    newlyClaimed.push(badge);
+                }
+            });
+            return newlyClaimed;
+        }
+
+        function buildBadgeCard(badge, claimed, current) {
+            const li = document.createElement('li');
+            li.className = `badge-card${claimed ? ' earned' : ''}`;
+
+            const emoji = document.createElement('span');
+            emoji.className = 'badge-emoji';
+            emoji.textContent = badge.emoji;
+            li.appendChild(emoji);
+
+            const info = document.createElement('div');
+            info.className = 'badge-info';
+
+            const name = document.createElement('p');
+            name.className = 'badge-name';
+            name.textContent = badge.name;
+            info.appendChild(name);
+
+            const meta = document.createElement('p');
+            meta.className = 'badge-meta';
+            if (claimed) {
+                meta.textContent = `Earned · +${badge.reward} credits`;
+            } else {
+                meta.textContent = `${badge.desc} · ${Math.min(current, badge.threshold)}/${badge.threshold}`;
+            }
+            info.appendChild(meta);
+
+            li.appendChild(info);
+            return li;
+        }
+
+        function renderBadges() {
+            if (!badgesGrid || !streakBadgesGrid) return;
+            let earnedCount = 0;
+            badgesGrid.innerHTML = '';
+
+            getTaskBadges().forEach((badge) => {
+                const claimed = claimedBadgeIds.has(badge.id);
+                if (claimed) earnedCount += 1;
+                badgesGrid.appendChild(buildBadgeCard(badge, claimed, completedCount));
+            });
+            taskBadgesCount.textContent = `${earnedCount} / ∞`;
+
+            let streakEarned = 0;
+            streakBadgesGrid.innerHTML = '';
+            getStreakMilestones().forEach((badge) => {
+                const claimed = claimedStreakBadges.has(badge.id);
+                if (claimed) streakEarned += 1;
+                streakBadgesGrid.appendChild(buildBadgeCard(badge, claimed, streak));
+            });
+            streakBadgesCount.textContent = `${streakEarned} / ∞`;
+
+            rewardsCount.textContent = `${earnedCount + streakEarned} / ∞ earned`;
+        }
+
+        function claimEligibleStreakBadges() {
+            const newlyClaimed = [];
+            getStreakMilestones().forEach((badge) => {
+                if (!claimedStreakBadges.has(badge.id) && streak >= badge.threshold) {
+                    claimedStreakBadges.add(badge.id);
+                    newlyClaimed.push(badge);
+                }
+            });
+            return newlyClaimed;
+        }
+
+        function renderStreak() {
+            if (!streakValue || !streakMeta || !streakNext || !streakTrackFill) return;
+            const frozen = Boolean(frozenMissedDay) && streak > 0;
+            if (streakCard) streakCard.classList.toggle('frozen', frozen);
+
+            if (streak > 0) {
+                streakValue.textContent = frozen ? `${streak}-day streak ❄️` : `${streak}-day streak`;
+                streakMeta.textContent = frozen
+                    ? 'Missed yesterday — your streak is frozen for one day. Complete a task today to keep it going!'
+                    : bestStreak > streak
+                        ? `Best: ${bestStreak} days · keep it going`
+                        : `Best: ${bestStreak} days · your longest yet!`;
+            } else {
+                streakValue.textContent = 'No streak yet';
+                streakMeta.textContent = 'Complete a task today to start your streak';
+            }
+
+            const next = getStreakMilestones().find((badge) => !claimedStreakBadges.has(badge.id));
+            if (next) {
+                streakNext.textContent = `Next: ${next.emoji} ${next.threshold}-day streak → +${next.reward} credits`;
+                streakTrackFill.style.width = `${Math.min(100, (streak / next.threshold) * 100)}%`;
+            } else {
+                streakNext.textContent = 'All streak rewards earned! 🎉';
+                streakTrackFill.style.width = '100%';
+            }
+        }
+
+        function renderCalendar() {
+            if (!calGrid || !calMonthLabel || !calMonthStats || !calNextBtn) return;
+
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayKey = dateKey(0);
+            const atCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth();
+
+            calMonthLabel.textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
+            calNextBtn.disabled = calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth >= now.getMonth());
+
+            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+            const lead = new Date(calYear, calMonth, 1).getDay();
+
+            let activeDays = 0;
+            let tasksDone = 0;
+            calGrid.innerHTML = '';
+
+            for (let i = 0; i < lead; i += 1) {
+                const blank = document.createElement('div');
+                blank.className = 'cal-cell blank';
+                calGrid.appendChild(blank);
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const dayKey = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const count = activity[dayKey] || 0;
+                if (count > 0) {
+                    activeDays += 1;
+                    tasksDone += count;
+                }
+
+                const cell = document.createElement('div');
+                cell.className = 'cal-cell';
+
+                const num = document.createElement('span');
+                num.className = 'cal-num';
+                num.textContent = String(day);
+                cell.appendChild(num);
+
+                const cellDate = new Date(calYear, calMonth, day);
+                if (cellDate > startOfToday) cell.classList.add('future');
+                if (dayKey === todayKey) cell.classList.add('today');
+                if (frozenDays.has(dayKey)) {
+                    cell.classList.add('frozen');
+                    cell.title = 'Missed day — your streak was frozen';
+                } else if (count > 0) {
+                    cell.classList.add('done');
+                    cell.title = `${count} task${count === 1 ? '' : 's'} completed`;
+                }
+
+                if (count > 0) {
+                    const dots = document.createElement('span');
+                    dots.className = 'cal-dots';
+                    dots.setAttribute('aria-label', `${count} completed task${count === 1 ? '' : 's'}`);
+                    const visibleDots = Math.min(count, 5);
+                    for (let dotIndex = 0; dotIndex < visibleDots; dotIndex += 1) {
+                        const dot = document.createElement('i');
+                        dot.className = 'cal-dot';
+                        dot.setAttribute('aria-hidden', 'true');
+                        dots.appendChild(dot);
+                    }
+                    if (count > visibleDots) {
+                        const more = document.createElement('span');
+                        more.className = 'cal-dot-more';
+                        more.textContent = `+${count - visibleDots}`;
+                        dots.appendChild(more);
+                    }
+                    cell.appendChild(dots);
+                }
+                calGrid.appendChild(cell);
+            }
+
+            // Pad the last row so every week has the same height.
+            const remainder = (lead + daysInMonth) % 7;
+            if (remainder > 0) {
+                for (let i = remainder; i < 7; i += 1) {
+                    const blank = document.createElement('div');
+                    blank.className = 'cal-cell blank';
+                    calGrid.appendChild(blank);
+                }
+            }
+
+            if (tasksDone > 0) {
+                calMonthStats.textContent = `${activeDays} active day${activeDays === 1 ? '' : 's'} · ${tasksDone} task${tasksDone === 1 ? '' : 's'} this month`;
+            } else if (atCurrentMonth) {
+                calMonthStats.textContent = 'No activity yet this month';
+            } else {
+                calMonthStats.textContent = 'No tasks completed';
+            }
+        }
+
+        function changeCalendarMonth(step) {
+            calMonth += step;
+            if (calMonth < 0) {
+                calMonth = 11;
+                calYear -= 1;
+            }
+            if (calMonth > 11) {
+                calMonth = 0;
+                calYear += 1;
+            }
+            renderCalendar();
+        }
+
+        function renderPerformance() {
+            if (!perfChart || !perfSummary) return;
+
+            const now = new Date();
+            const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const bucketWord = perfRange === 'day' ? 'days' : perfRange === 'week' ? 'weeks' : perfRange === 'month' ? 'months' : 'years';
+            let periodLabel = '';
+            const cols = [];
+
+            if (perfRange === 'day') {
+                periodLabel = 'Last 14 days';
+                for (let i = 13; i >= 0; i -= 1) {
+                    const d = new Date(todayMid.getFullYear(), todayMid.getMonth(), todayMid.getDate() - i);
+                    const v = activity[keyFromDate(d)] || 0;
+                    cols.push({
+                        v,
+                        title: `${DAYS_FULL[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()} — ${v} task${v === 1 ? '' : 's'}`,
+                        lines: [DAYS_2[d.getDay()], String(d.getDate())],
+                        current: i === 0
+                    });
+                }
+            } else if (perfRange === 'week') {
+                periodLabel = 'Last 8 weeks';
+                const weekStart = new Date(todayMid.getFullYear(), todayMid.getMonth(), todayMid.getDate() - ((todayMid.getDay() + 7) % 7));
+                for (let w = 7; w >= 0; w -= 1) {
+                    const start = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() - 7 * w);
+                    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+                    const v = sumActivity(start, end);
+                    const startL = `${MONTHS_SHORT[start.getMonth()]} ${start.getDate()}`;
+                    const endL = `${MONTHS_SHORT[end.getMonth()]} ${end.getDate()}`;
+                    cols.push({
+                        v,
+                        title: `${startL} – ${endL}, ${end.getFullYear()} — ${v} task${v === 1 ? '' : 's'}`,
+                        lines: [startL],
+                        current: w === 0
+                    });
+                }
+            } else if (perfRange === 'month') {
+                periodLabel = 'Last 12 months';
+                for (let m = 11; m >= 0; m -= 1) {
+                    const first = new Date(todayMid.getFullYear(), todayMid.getMonth() - m, 1);
+                    const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
+                    const v = sumActivity(first, last);
+                    cols.push({
+                        v,
+                        title: `${MONTH_NAMES[first.getMonth()]} ${first.getFullYear()} — ${v} task${v === 1 ? '' : 's'}`,
+                        lines: [MONTHS_SHORT[first.getMonth()], String(first.getFullYear()).slice(2)],
+                        current: m === 0
+                    });
+                }
+            } else {
+                let firstYear = now.getFullYear();
+                Object.keys(activity).forEach((key) => {
+                    const y = Number(key.slice(0, 4));
+                    if (Number.isFinite(y) && y < firstYear) firstYear = y;
+                });
+                const startYear = Math.max(firstYear, now.getFullYear() - 7);
+                periodLabel = startYear === now.getFullYear() ? 'This year' : `${startYear} – ${now.getFullYear()}`;
+                for (let y = startYear; y <= now.getFullYear(); y += 1) {
+                    const v = sumActivity(new Date(y, 0, 1), new Date(y, 11, 31));
+                    cols.push({
+                        v,
+                        title: `${y} — ${v} task${v === 1 ? '' : 's'}`,
+                        lines: [String(y)],
+                        current: y === now.getFullYear()
+                    });
+                }
+            }
+
+            const total = cols.reduce((sum, c) => sum + c.v, 0);
+            const best = cols.reduce((max, c) => (c.v > max.v ? c : max), cols[0]);
+            const active = cols.filter((c) => c.v > 0).length;
+            const maxV = cols.reduce((m, c) => Math.max(m, c.v), 1);
+
+            perfChart.textContent = '';
+            if (total === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'chart-empty';
+                empty.textContent = perfRange === 'day'
+                    ? 'No tasks completed in the last 14 days yet — complete a task today to start your performance chart.'
+                    : 'Nothing to show in this view yet — try another period, or complete a task.';
+                perfChart.appendChild(empty);
+                perfChart.setAttribute('aria-label', `Performance chart (${periodLabel}): no activity`);
+                perfSummary.textContent = `${periodLabel}: 0 tasks so far.`;
+                return;
+            }
+
+            cols.forEach((c) => {
+                const col = document.createElement('div');
+                col.className = `chart-col${c.current ? ' current' : ''}`;
+
+                const track = document.createElement('div');
+                track.className = 'chart-track';
+                track.title = c.title;
+
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = `${Math.round((c.v / maxV) * 100)}%`;
+                track.appendChild(bar);
+
+                const labels = document.createElement('div');
+                labels.className = 'chart-labels';
+                c.lines.forEach((line) => {
+                    const span = document.createElement('span');
+                    span.textContent = line;
+                    labels.appendChild(span);
+                });
+
+                col.appendChild(track);
+                col.appendChild(labels);
+                perfChart.appendChild(col);
+            });
+
+            perfSummary.textContent = `${periodLabel}: ${total} task${total === 1 ? '' : 's'} · ${active}/${cols.length} ${bucketWord} with activity · Peak ${best.v} task${best.v === 1 ? '' : 's'} (${best.title.split(' — ')[0]})`;
+            perfChart.setAttribute('aria-label', `Bar chart of tasks completed per ${perfRange}: ${perfSummary.textContent}`);
+        }
+
+        function showBadgeCelebration(newBadges) {
+            const totalBonus = newBadges.reduce((sum, badge) => sum + badge.reward, 0);
+            badgeModalEmoji.textContent = newBadges[0].emoji;
+            if (newBadges.length === 1) {
+                const badge = newBadges[0];
+                badgeModalTitle.textContent = badge.name;
+                badgeModalMessage.textContent = `${badge.desc} — +${badge.reward} bonus credits!`;
+            } else {
+                badgeModalTitle.textContent = `${newBadges.length} badges unlocked!`;
+                badgeModalMessage.textContent = `${newBadges.map((badge) => badge.name).join(', ')} — +${totalBonus} bonus credits!`;
+            }
+            badgeModal.classList.add('open');
+            badgeModal.setAttribute('aria-hidden', 'false');
+            badgeCloseBtn.focus();
+        }
+
+        function startEditingTask(taskId) {
+            const task = tasks.find((item) => item.id === taskId);
+            if (!task || task.completed) return;
+            editingTaskId = taskId;
+            renderTasks();
+        }
+
+        function saveEditedTask(taskId) {
+            const input = taskList.querySelector(`li[data-id="${taskId}"] .edit-input`);
+            const newText = input ? input.value.trim() : '';
+            const task = tasks.find((item) => item.id === taskId);
+            editingTaskId = null;
+            if (!task || !newText) {
+                renderTasks();
+                return;
+            }
+            task.text = newText;
+            if (task.categoryMode === 'auto' || !task.category) {
+                task.category = inferCategory(newText);
+            }
+            saveState();
+            renderTasks();
+        }
+
+        function cancelEditTask() {
+            editingTaskId = null;
+            renderTasks();
+        }
+
+        function addTask() {
+            const taskText = taskInput.value.trim();
+            if (!taskText) return;
+
+            const selectedCategory = taskCategoryInput.value;
+            const category = selectedCategory === 'auto' ? inferCategory(taskText) : selectedCategory;
+
+            tasks.unshift({
+                id: String(Date.now()) + Math.random().toString(16).slice(2),
+                text: taskText,
+                completed: false,
+                taskDate: normalizeDateValue(taskDateInput.value),
+                category,
+                categoryMode: selectedCategory === 'auto' ? 'auto' : 'manual',
+                createdAt: normalizeDateValue(taskDateInput.value)
+            });
+
+            saveState();
+            renderTasks();
+            taskInput.value = '';
+            taskInput.focus();
+        }
+
+        const taskNotice = document.getElementById('taskNotice');
+        let taskNoticeTimer = 0;
+
+        function showCompletionNotice(message) {
+            if (!taskNotice) return;
+            taskNotice.textContent = message;
+            taskNotice.hidden = false;
+            taskNotice.classList.remove('show');
+            void taskNotice.offsetWidth; // restart the pop-in animation
+            taskNotice.classList.add('show');
+            clearTimeout(taskNoticeTimer);
+            taskNoticeTimer = setTimeout(() => {
+                taskNotice.hidden = true;
+                taskNotice.classList.remove('show');
+            }, 2400);
+        }
+
+        function completeTask(taskId) {
+            const task = tasks.find((item) => item.id === taskId);
+            if (!task || task.completed) return;
+
+            // Future-dated tasks can't be completed ahead of time.
+            if (normalizeDateValue(task.taskDate) > dateKey(0)) {
+                showCompletionNotice('You cannot complete future tasks ahead of time!');
+                return;
+            }
+
+            task.completed = true;
+            completedCount += 1;
+
+            const today = dateKey(0);
+            if (lastCompletedDate !== today) {
+                if (lastCompletedDate) {
+                    const gap = daysBetween(lastCompletedDate, today);
+                    const missedDay = dateKey(-1);
+                    const freezeAvailable = lastFreezeMonth !== monthKeyNow();
+                    if (gap === 1 || (gap === 2 && (freezeAvailable || frozenDays.has(missedDay)))) {
+                        streak += 1; // completed yesterday, or one missed day auto-frozen
+                        if (gap === 2) {
+                            frozenDays.add(missedDay);
+                            if (freezeAvailable) lastFreezeMonth = monthKeyNow();
+                        }
+                    } else {
+                        streak = 1;
+                    }
+                } else {
+                    streak = 1;
+                }
+                lastCompletedDate = today;
+                frozenMissedDay = '';
+                if (streak > bestStreak) bestStreak = streak;
+            }
+            activity[today] = (activity[today] || 0) + 1;
+
+            const newBadges = claimEligibleBadges();
+            const newStreakBadges = claimEligibleStreakBadges();
+            syncCreditsFromTasks();
+            saveState();
+            renderTasks();
+            const allNew = [...newBadges, ...newStreakBadges];
+            if (allNew.length > 0) {
+                showBadgeCelebration(allNew);
+            }
+        }
+
+        function deleteTask(taskId) {
+            const task = tasks.find((item) => item.id === taskId);
+            if (!task || task.completed) return;
+
+            tasks = tasks.filter((item) => item.id !== taskId);
+            saveState();
+            renderTasks();
+        }
+
+        const rewardsPanel = document.getElementById('rewardsPanel');
+        const rewardsToggleBtn = document.getElementById('rewardsToggleBtn');
+        const rewardsCount = document.getElementById('rewardsCount');
+        const badgesGrid = document.getElementById('badgesGrid');
+        const taskBadgesCount = document.getElementById('taskBadgesCount');
+        const streakBadgesGrid = document.getElementById('streakBadgesGrid');
+        const streakBadgesCount = document.getElementById('streakBadgesCount');
+        const streakValue = document.getElementById('streakValue');
+        const streakMeta = document.getElementById('streakMeta');
+        const streakNext = document.getElementById('streakNext');
+        const streakTrackFill = document.getElementById('streakTrackFill');
+        const streakCard = document.getElementById('streakCard');
+        const calPanel = document.getElementById('calPanel');
+        const calPanelToggleBtn = document.getElementById('calPanelToggleBtn');
+        const calPrevBtn = document.getElementById('calPrev');
+        const calNextBtn = document.getElementById('calNext');
+        const calMonthLabel = document.getElementById('calMonthLabel');
+        const calMonthStats = document.getElementById('calMonthStats');
+        const calGrid = document.getElementById('calGrid');
+
+        function collapseRewardsPanel() {
+            rewardsPanel.classList.add('collapsed');
+            rewardsToggleBtn.textContent = '+';
+            rewardsToggleBtn.setAttribute('aria-label', 'Expand rewards panel');
+        }
+
+        function expandRewardsPanel() {
+            rewardsPanel.classList.remove('collapsed');
+            rewardsToggleBtn.textContent = '−';
+            rewardsToggleBtn.setAttribute('aria-label', 'Collapse rewards panel');
+        }
+
+        function collapseCalPanel() {
+            calPanel.classList.add('collapsed');
+            calPanelToggleBtn.textContent = '+';
+            calPanelToggleBtn.setAttribute('aria-label', 'Expand calendar panel');
+        }
+
+        function expandCalPanel() {
+            calPanel.classList.remove('collapsed');
+            calPanelToggleBtn.textContent = '−';
+            calPanelToggleBtn.setAttribute('aria-label', 'Collapse calendar panel');
+        }
+
+        function persistPanelState() {
+            try {
+                localStorage.setItem('todo.panelsCollapsed', JSON.stringify({
+                    rewards: rewardsPanel.classList.contains('collapsed'),
+                    calendar: calPanel.classList.contains('collapsed')
+                }));
+            } catch (error) {
+                // ignore.
+            }
+        }
+
+        rewardsToggleBtn.addEventListener('click', () => {
+            if (rewardsPanel.classList.contains('collapsed')) expandRewardsPanel();
+            else collapseRewardsPanel();
+            persistPanelState();
+        });
+
+        calPanelToggleBtn.addEventListener('click', () => {
+            if (calPanel.classList.contains('collapsed')) expandCalPanel();
+            else collapseCalPanel();
+            persistPanelState();
+        });
+
+        calPrevBtn.addEventListener('click', () => changeCalendarMonth(-1));
+        calNextBtn.addEventListener('click', () => changeCalendarMonth(1));
+
+
+        const perfTabs = document.querySelectorAll('.perf-tab');
+        const perfChart = document.getElementById('perfChart');
+        const perfSummary = document.getElementById('perfSummary');
+        const tasksView = document.getElementById('tasksView');
+        const performanceView = document.getElementById('performanceView');
+        const tasksViewBtn = document.getElementById('tasksViewBtn');
+        const performanceViewBtn = document.getElementById('performanceViewBtn');
+        let perfRange = 'day';
+
+        function setMainView(view) {
+            const showPerformance = view === 'performance';
+            tasksView.hidden = showPerformance;
+            performanceView.hidden = !showPerformance;
+            tasksViewBtn.classList.toggle('active', !showPerformance);
+            performanceViewBtn.classList.toggle('active', showPerformance);
+            tasksViewBtn.setAttribute('aria-selected', String(!showPerformance));
+            performanceViewBtn.setAttribute('aria-selected', String(showPerformance));
+        }
+
+        tasksViewBtn.addEventListener('click', () => setMainView('tasks'));
+        performanceViewBtn.addEventListener('click', () => setMainView('performance'));
+
+        perfTabs.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                perfRange = btn.dataset.range;
+                perfTabs.forEach((other) => {
+                    const active = other === btn;
+                    other.classList.toggle('active', active);
+                    other.setAttribute('aria-selected', String(active));
+                });
+                renderPerformance();
+            });
+        });
+
+        const badgeModal = document.getElementById('badgeModal');
+        const badgeModalEmoji = document.getElementById('badgeModalEmoji');
+        const badgeModalTitle = document.getElementById('badgeModalTitle');
+        const badgeModalMessage = document.getElementById('badgeModalMessage');
+        const badgeCloseBtn = document.getElementById('badgeCloseBtn');
+
+        function closeBadgeModal() {
+            badgeModal.classList.remove('open');
+            if (badgeModal.contains(document.activeElement)) taskInput.focus();
+            badgeModal.setAttribute('aria-hidden', 'true');
+        }
+
+        badgeCloseBtn.addEventListener('click', closeBadgeModal);
+
+        badgeModal.addEventListener('click', (event) => {
+            if (event.target === badgeModal) closeBadgeModal();
+        });
+
+        const profileBtn = document.getElementById('profileBtn');
+        const profileCard = document.getElementById('profileCard');
+        const profileNameInput = document.getElementById('profileNameInput');
+        const saveNameBtn = document.getElementById('saveNameBtn');
+        const editNameBtn = document.getElementById('editNameBtn');
+        const closeProfileBtn = document.getElementById('closeProfileBtn');
+        const profileGreet = document.getElementById('profileGreet');
+        const profileSaved = document.getElementById('profileSaved');
+        const syncBanner = document.getElementById('syncBanner');
+        const syncText = document.getElementById('syncText');
+        const syncRetry = document.getElementById('syncRetry');
+        const authSection = document.getElementById('authSection');
+        const authForm = document.getElementById('authForm');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authPasswordToggle = document.getElementById('authPasswordToggle');
+        const authName = document.getElementById('authName');
+        const authNameField = document.getElementById('authNameField');
+        const authPrimaryBtn = document.getElementById('authPrimaryBtn');
+        const authSwitchModeBtn = document.getElementById('authSwitchModeBtn');
+        const authSwitchHint = document.getElementById('authSwitchHint');
+        const authError = document.getElementById('authError');
+        const authSuccess = document.getElementById('authSuccess');
+        const signedInView = document.getElementById('signedInView');
+        const accountEmail = document.getElementById('accountEmail');
+        const accountAvatar = document.getElementById('accountAvatar');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const forgotBtn = document.getElementById('forgotBtn');
+        const forgotForm = document.getElementById('forgotForm');
+        const forgotEmail = document.getElementById('forgotEmail');
+        const sendResetBtn = document.getElementById('sendResetBtn');
+        const cancelForgotBtn = document.getElementById('cancelForgotBtn');
+        const PERSON_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+        const SPINNER_SVG = '<svg class="spinner" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+        let unsubAuth = null;
+        let forceSignedOutView = false;
+
+        let profileName = '';
+
+        function loadProfileName() {
+            profileName = localStorage.getItem(STORAGE_KEYS.name) || '';
+        }
+        function renderAvatar() {
+            const initial = profileName.trim().charAt(0).toUpperCase();
+            if (initial) {
+                profileBtn.textContent = initial;
+                profileBtn.classList.add('has-name');
+            } else {
+                profileBtn.innerHTML = PERSON_ICON;
+                profileBtn.classList.remove('has-name');
+            }
+        }
+
+        let profileEditing = false;
+
+        function updateProfileGreeting() {
+            if (!signedInUser) {
+                profileGreet.textContent = 'Sign in to sync your tasks everywhere.';
+            } else if (profileName) {
+                profileGreet.textContent = `Signed in as ${profileName}`;
+            } else {
+                profileGreet.textContent = 'Add a name so your profile is personal.';
+            }
+        }
+
+        function syncProfileControls() {
+            const locked = Boolean(profileName) && !profileEditing;
+            profileNameInput.value = profileName;
+            profileNameInput.readOnly = locked;
+            saveNameBtn.hidden = locked;
+            editNameBtn.hidden = !locked;
+        }
+
+        function renderProfile() {
+            updateProfileGreeting();
+            syncProfileControls();
+            renderAvatar();
+        }
+
+        function openProfileCard() {
+            profileCard.classList.add('open');
+            profileCard.setAttribute('aria-hidden', 'false');
+            profileBtn.setAttribute('aria-expanded', 'true');
+            if (signedInUser) {
+                profileEditing = false;
+                syncProfileControls();
+                if (profileName) editNameBtn.focus();
+                else profileNameInput.focus();
+            } else {
+                hideAuthMessage();
+                if (forgotForm.hidden) authEmail.focus();
+                else forgotEmail.focus();
+            }
+        }
+
+        function closeProfileCard() {
+            profileEditing = false;
+            syncProfileControls();
+            profileCard.classList.remove('open');
+            if (profileCard.contains(document.activeElement)) profileBtn.focus();
+            profileCard.setAttribute('aria-hidden', 'true');
+            profileBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        function saveProfileName() {
+            const nextName = profileNameInput.value.trim();
+            profileEditing = false;
+            if (nextName !== profileName) {
+                profileName = nextName;
+                localStorage.setItem(STORAGE_KEYS.name, profileName);
+                if (signedInUser && !savingNameToCloud) {
+                    savingNameToCloud = true;
+                    savingCloudName = profileName;
+                    cloudWrite.queue = cloudWrite.queue.then(async () => {
+                        if (!tasksDocRef || !signedInUser || applyingRemoteState) return;
+                        try {
+                            await withTimeout(fbLib.fs.setDoc(tasksDocRef, { name: savingCloudName, updatedAt: Date.now() }, { merge: true }), 15000, 'name save');
+                        } catch (error) {
+                            console.warn('[cloud] profile name write failed', error);
+                        } finally {
+                            savingNameToCloud = false;
+                        }
+                    });
+                }
+            }
+            renderProfile();
+            if (profileName) {
+                editNameBtn.focus();
+            } else {
+                profileNameInput.focus();
+            }
+            profileSaved.hidden = false;
+            clearTimeout(saveProfileName._timer);
+            saveProfileName._timer = setTimeout(() => {
+                profileSaved.hidden = true;
+            }, 1800);
+        }
+
+        function startEditingProfile() {
+            profileEditing = true;
+            syncProfileControls();
+            profileNameInput.focus();
+            profileNameInput.select();
+        }
+
+        profileBtn.addEventListener('click', () => {
+            if (profileCard.classList.contains('open')) {
+                closeProfileCard();
+            } else {
+                openProfileCard();
+            }
+        });
+
+        closeProfileBtn.addEventListener('click', closeProfileCard);
+        saveNameBtn.addEventListener('click', saveProfileName);
+        editNameBtn.addEventListener('click', startEditingProfile);
+
+        authForm.addEventListener('submit', handleAuthSubmit);
+        authSwitchModeBtn.addEventListener('click', () => setAuthMode(authMode === 'signup' ? 'login' : 'signup'));
+        authPasswordToggle.addEventListener('click', toggleAuthPassword);
+        forgotBtn.addEventListener('click', showForgotForm);
+        sendResetBtn.addEventListener('click', handleForgotPassword);
+        cancelForgotBtn.addEventListener('click', hideForgotForm);
+        logoutBtn.addEventListener('click', handleLogout);
+        syncRetry.addEventListener('click', () => {
+            if (signedInUser) performCloudWriteNow();
+            else initFirebase();
+        });
+
+        profileNameInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !profileNameInput.readOnly) {
+                event.preventDefault();
+                saveProfileName();
+            }
+        });
+
+        const resetBtn = document.getElementById('resetBtn');
+        const resetModal = document.getElementById('resetModal');
+        const cancelResetBtn = document.getElementById('cancelResetBtn');
+        const confirmResetBtn = document.getElementById('confirmResetBtn');
+
+        function openResetModal() {
+            resetModal.classList.add('open');
+            resetModal.setAttribute('aria-hidden', 'false');
+            cancelResetBtn.focus();
+        }
+
+        function closeResetModal() {
+            resetModal.classList.remove('open');
+            if (resetModal.contains(document.activeElement)) {
+                (profileCard.classList.contains('open') ? resetBtn : profileBtn).focus();
+            }
+            resetModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function resetTaskData() {
+            tasks = [];
+            netCredits = 0;
+            completedCount = 0;
+            claimedBadgeIds = new Set();
+            streak = 0;
+            bestStreak = 0;
+            lastCompletedDate = '';
+            claimedStreakBadges = new Set();
+            activity = {};
+            frozenDays = new Set();
+            frozenMissedDay = '';
+            lastFreezeMonth = '';
+            resetTaskFilters();
+            taskDateInput.value = dateKey(0);
+            taskCategoryInput.value = 'auto';
+
+            Object.keys(STORAGE_KEYS).forEach((key) => {
+                if (key !== 'name') localStorage.removeItem(STORAGE_KEYS[key]);
+            });
+
+            if (signedInUser && tasksDocRef) {
+                performCloudWriteNow();
+            }
+
+            closeResetModal();
+            closeProfileCard();
+            renderTasks();
+        }
+
+        resetBtn.addEventListener('click', openResetModal);
+        confirmResetBtn.addEventListener('click', resetTaskData);
+        cancelResetBtn.addEventListener('click', closeResetModal);
+
+        resetModal.addEventListener('click', (event) => {
+            if (event.target === resetModal) closeResetModal();
+        });
+
+        // Enter confirms the reset; Escape cancels it.
+        resetModal.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                resetTaskData();
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (
+                profileCard.classList.contains('open') &&
+                !profileCard.contains(event.target) &&
+                !profileBtn.contains(event.target)
+            ) {
+                closeProfileCard();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') return;
+            if (badgeModal.classList.contains('open')) {
+                closeBadgeModal();
+            } else if (resetModal.classList.contains('open')) {
+                closeResetModal();
+            } else if (profileCard.classList.contains('open')) {
+                closeProfileCard();
+            }
+        });
+
+        taskForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            addTask();
+        });
+
+        // Flush pending changes to the cloud when the tab closes or hides.
+        window.addEventListener('beforeunload', () => {
+            if (signedInUser && !applyingRemoteState) performCloudWriteNow();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && signedInUser && !applyingRemoteState) performCloudWriteNow();
+        });
+
+        initFirebase();
+        loadState();
+        renderTasks();
+        loadProfileName();
+        renderProfile();
+        setAuthMode('login');
+    </script>
+</body>
+</html>
